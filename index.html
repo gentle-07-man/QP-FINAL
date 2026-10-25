@@ -4005,7 +4005,7 @@
             body: JSON.stringify({
               subject: subject,
               gcName: gcName,
-              imageBase64: this.selectedAnswerBase64
+              photo_base64: this.selectedAnswerBase64
             })
           });
 
@@ -4018,6 +4018,9 @@
             data = { error: 'The Telegram endpoint returned HTML instead of JSON. Redeploy the function and clear the site cache.' };
           }
 
+          console.log('sendToTelegram HTTP status:', response.status);
+          console.log('sendToTelegram response:', data);
+          
           if (!response.ok || data.error) {
             if (data.disabled || (data.error && data.error.includes('Coming Soon'))) {
               showToast('Coming Soon', 'info');
