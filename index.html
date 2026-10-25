@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>QP 2.0 HUB</title>
+  <meta name="description" content="QP 2.0 HUB - Premier Education Hub with role-based access, PYQs, Mock Tests, Community Adda, and Official Notices." />
+  <meta property="og:title" content="QP 2.0 HUB" />
+  <meta property="og:description" content="QP 2.0 HUB - Premier Education Hub with role-based access, PYQs, Mock Tests, Community Adda, and Official Notices." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            },
+            aurora: {
+              pink: '#ec4899',
+              cyan: '#06b6d4',
+              gold: '#eab308',
+              purple: '#8b5cf6'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Rajdhani:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Howler.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <!-- Firebase Compat SDK 10.8.0 -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(10, 12, 28, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #4f46e5, #06b6d4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #818cf8;
+    }
+
+    /* Ambient floating aura */
+    @keyframes aura-drift {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      50% { transform: translate(30px, -30px) scale(1.1) rotate(10deg); }
+      100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    }
+    .aurora-orb {
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: aura-drift 18s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    /* Glowing Logo Pulse Animation */
+    @keyframes logoPulse {
+      0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.6));
+      }
+      50% {
+        transform: scale(1.04);
+        filter: drop-shadow(0 0 35px rgba(6, 182, 212, 0.85)) drop-shadow(0 0 50px rgba(79, 70, 229, 0.7));
+      }
+      100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.6));
+      }
+    }
+    .logo-pulse-glow {
+      animation: logoPulse 2.8s ease-in-out infinite;
+    }
+
+    /* Gold shimmer gradient text */
+    .shimmer-gold {
+      background: linear-gradient(90deg, #facc15 0%, #ffffff 35%, #eab308 65%, #facc15 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: textShimmer 3s linear infinite;
+    }
+    @keyframes textShimmer {
+      to { background-position: 200% center; }
+    }
+
+    /* Glassmorphism cards */
+    .glass-card {
+      background: rgba(14, 17, 38, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .neon-indigo {
+      border: 1px solid rgba(99, 102, 241, 0.45);
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.2), inset 0 0 15px rgba(99, 102, 241, 0.05);
+    }
+    .neon-cyan {
+      border: 1px solid rgba(6, 182, 212, 0.45);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05);
+    }
+    .neon-gold {
+      border: 1px solid rgba(234, 179, 8, 0.45);
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.2), inset 0 0 15px rgba(234, 179, 8, 0.05);
+    }
+
+    /* Glow buttons */
+    .btn-glow-indigo {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.45);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-glow-indigo:hover {
+      box-shadow: 0 0 28px rgba(79, 70, 229, 0.7);
+      transform: translateY(-1px);
+    }
+    .btn-glow-indigo:active {
+      transform: translateY(1px);
+    }
+
+    .btn-glow-cyan {
+      background: linear-gradient(135deg, #06b6d4, #0284c7);
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.45);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-glow-cyan:hover {
+      box-shadow: 0 0 28px rgba(6, 182, 212, 0.7);
+      transform: translateY(-1px);
+    }
+
+    .btn-glow-gold {
+      background: linear-gradient(135deg, #eab308, #ca8a04);
+      box-shadow: 0 0 20px rgba(234, 179, 8, 0.45);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-glow-gold:hover {
+      box-shadow: 0 0 28px rgba(234, 179, 8, 0.7);
+    }
+
+    /* Card shake */
+    @keyframes cardShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .shake-error {
+      animation: cardShake 0.4s ease-in-out;
+    }
+
+    /* Sound wave animation */
+    @keyframes waveBar {
+      0%, 100% { height: 4px; }
+      50% { height: 16px; }
+    }
+    .sound-bar-1 { animation: waveBar 0.8s ease-in-out infinite; }
+    .sound-bar-2 { animation: waveBar 0.6s ease-in-out infinite 0.15s; }
+    .sound-bar-3 { animation: waveBar 0.9s ease-in-out infinite 0.3s; }
+    .sound-bar-4 { animation: waveBar 0.7s ease-in-out infinite 0.45s; }
+
+    /* Sparkle Particle */
+    .sparkle-particle {
+      position: fixed;
+      pointer-events: none;
+      border-radius: 50%;
+      z-index: 99999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.6s cubic-bezier(0.1, 0.8, 0.3, 1), opacity 0.6s ease;
+    }
+
+    body {
+      background-color: #070814;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#070814] flex justify-center items-start text-slate-100">
+
+  <!-- Ambient Animated Aurora Background Layer -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="aurora-orb absolute -top-24 -left-20 w-80 h-80 rounded-full bg-indigo-600/35"></div>
+    <div class="aurora-orb absolute top-1/4 -right-24 w-80 h-80 rounded-full bg-cyan-500/30" style="animation-delay: -3s;"></div>
+    <div class="aurora-orb absolute top-2/3 -left-20 w-72 h-72 rounded-full bg-purple-600/30" style="animation-delay: -7s;"></div>
+    <div class="aurora-orb absolute bottom-0 right-0 w-80 h-80 rounded-full bg-indigo-800/35" style="animation-delay: -11s;"></div>
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:28px_28px] opacity-60"></div>
+  </div>
+
+  <!-- ReCAPTCHA invisible container -->
+  <div id="recaptcha-container"></div>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 w-11/12 max-w-[400px] z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Mobile-First Wrapper (max-w-[430px]) -->
+  <div id="app-root" class="relative z-10 w-full max-w-[430px] min-h-screen flex flex-col pb-24 shadow-2xl bg-[#090b1c]/85 border-x border-slate-800/60 backdrop-blur-md">
+
+    <!-- Top Status Bar & Brand Header -->
+    <header id="main-header" class="hidden sticky top-0 z-40 bg-[#0c0f28]/90 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <img src="/logo.png" alt="QP 2.0 Logo" class="w-9 h-9 rounded-full object-contain drop-shadow-[0_0_10px_rgba(79,70,229,0.5)]">
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-base font-extrabold tracking-tight shimmer-gold leading-none font-display">
+              QP 2.0 HUB
+            </h1>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 tracking-wider">
+              OFFICIAL
+            </span>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium tracking-tight">
+            Education Platform
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- Sound Wave Audio Toggle -->
+        <button id="sound-toggle-btn" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/70 hover:bg-slate-700/70 border border-slate-700/60 text-slate-300 text-xs transition-all" title="Toggle Sound FX">
+          <div id="sound-wave-bars" class="flex items-center gap-[2px] h-4">
+            <span class="w-[2px] bg-cyan-400 rounded-full sound-bar-1"></span>
+            <span class="w-[2px] bg-indigo-400 rounded-full sound-bar-2"></span>
+            <span class="w-[2px] bg-yellow-400 rounded-full sound-bar-3"></span>
+            <span class="w-[2px] bg-purple-400 rounded-full sound-bar-4"></span>
+          </div>
+          <span id="sound-label" class="text-[10px] font-bold text-cyan-300">SFX</span>
+        </button>
+
+        <!-- Current User Action / Logout button -->
+        <div id="header-user-action"></div>
+      </div>
+    </header>
+
+    <!-- MOTIVATIONAL TICKER (Only shown in dashboard) -->
+    <div id="dashboard-ticker" class="hidden bg-gradient-to-r from-indigo-950/40 via-purple-950/40 to-cyan-950/40 border-b border-indigo-500/20 px-3 py-1.5 items-center justify-between text-[11px]">
+      <div class="flex items-center gap-1.5 text-yellow-300/90 font-medium truncate">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-400 flex-shrink-0 animate-pulse"></i>
+        <span class="font-semibold text-slate-200">QP 2.0 HUB:</span>
+        <span class="text-indigo-300 truncate">Mission Academic Excellence 🎯</span>
+      </div>
+      <div class="flex items-center gap-1 text-[10px] text-slate-400 flex-shrink-0 pl-1 font-mono">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+        <span id="live-status-pill" class="text-emerald-400 font-semibold">LIVE</span>
+      </div>
+    </div>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <main id="main-content" class="flex-1 p-4 flex flex-col">
+      <!-- Injected via JavaScript -->
+    </main>
+
+    <!-- BOTTOM APP NAVIGATION -->
+    <nav id="bottom-nav" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-[#0c0f27]/95 backdrop-blur-2xl border-t border-slate-800/80 px-2 py-2 items-center justify-around shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
+      <button onclick="App.switchDashboardTab('pyqs')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="pyqs">
+        <i data-lucide="book-open" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">PYQs</span>
+      </button>
+
+      <button onclick="App.switchDashboardTab('notices')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all relative" data-tab="notices">
+        <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">Notices</span>
+        <span id="nav-notices-badge" class="hidden absolute top-1 right-5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-[#0c0f27]"></span>
+      </button>
+
+      <button onclick="App.switchDashboardTab('mocks')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="mocks">
+        <i data-lucide="file-check-2" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">Mocks</span>
+      </button>
+
+      <button onclick="App.switchDashboardTab('chats')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all relative" data-tab="chats">
+        <i data-lucide="messages-square" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">Adda</span>
+        <span class="absolute top-1 right-5 w-2 h-2 rounded-full bg-cyan-400"></span>
+      </button>
+
+      <!-- Admin Tab (Visible to Owner, Co-Founder, CEO, CTO, Admin) -->
+      <button id="nav-admin-btn" onclick="App.switchDashboardTab('admin')" class="hidden nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-yellow-400 hover:text-yellow-300 transition-all" data-tab="admin">
+        <i data-lucide="shield-alert" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-extrabold tracking-tight">Admin</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- APPLICATION LOGIC & FIREBASE INITIALIZATION -->
+  <script>
+    // FIREBASE CONFIGURATION
+    const firebaseConfig = {
+      apiKey: "AIzaSyCO6ah6cTQ3mEC99WsY48vGthSeuMTg6ao",
+      authDomain: "qp-2-0-hub-09012011.firebaseapp.com",
+      projectId: "qp-2-0-hub-09012011",
+      storageBucket: "qp-2-0-hub-09012011.firebasestorage.app",
+      messagingSenderId: "121603897628",
+      appId: "1:121603897628:web:cfa31e4a0c7b652c32a2d9",
+      measurementId: "G-1VBD4XWFE1"
+    };
+
+    // Initialize Firebase Compat
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      if (firebase.firestore && firebase.firestore.setLogLevel) {
+        firebase.firestore.setLogLevel('silent');
+      }
+    } catch (err) {
+      console.warn("Firebase initialize warning:", err);
+    }
+
+    // Suppress internal SDK logs for unprovisioned Cloud Datastore backend
+    const rawConsoleError = console.error;
+    console.error = function(...args) {
+      const msg = args.map(a => typeof a === 'object' && a !== null ? (a.message || JSON.stringify(a)) : String(a)).join(' ');
+      if (msg.includes('Could not reach Cloud Firestore backend') || msg.includes('database (default) does not exist') || msg.includes('@firebase/firestore')) {
+        return;
+      }
+      rawConsoleError.apply(console, args);
+    };
+
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // DESIGNATED LEADERSHIP ROLES (Fixed role mapping to prevent bug)
+    const LEADERSHIP_ACCOUNTS = {
+      'haider': {
+        name: 'Haider',
+        nameLower: 'haider',
+        role: 'Owner',
+        myPass: 'haider2026',
+        status: 'approved',
+        phone: '+919876543210',
+        gmail: 'haider@qp2hub.com',
+        xp: 500
+      },
+      'aritra': {
+        name: 'Aritra',
+        nameLower: 'aritra',
+        role: 'Co-Founder',
+        myPass: 'aritra2026',
+        status: 'approved',
+        phone: '+919876543211',
+        gmail: 'aritra@qp2hub.com',
+        xp: 450
+      },
+      'ranbir': {
+        name: 'Ranbir',
+        nameLower: 'ranbir',
+        role: 'CEO',
+        myPass: 'ranbir2026',
+        status: 'approved',
+        phone: '+919876543212',
+        gmail: 'ranbir@qp2hub.com',
+        xp: 400
+      },
+      'gentleman': {
+        name: 'Gentleman',
+        nameLower: 'gentleman',
+        role: 'CTO',
+        myPass: 'gentleman2026',
+        status: 'approved',
+        phone: '+919876543213',
+        gmail: 'gentleman@qp2hub.com',
+        xp: 400
+      }
+    };
+
+    // ROLE ACCESS KEYS (Only valid keys can elevate role)
+    const ROLE_KEYS = {
+      'QP2.0OWNER@2026': 'Owner',
+      'QP2.0ADMIN@2026': 'Admin',
+      'STUDENT@2026': 'Student'
+    };
+
+    // SOUND SYSTEM (Web Audio API only, no external audio files)
+    const SoundSystem = {
+      muted: false,
+      ctx: null,
+
+      init() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            this.ctx = new AudioContextClass();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      toggle() {
+        this.muted = !this.muted;
+        const bars = document.getElementById('sound-wave-bars');
+        const label = document.getElementById('sound-label');
+        if (this.muted) {
+          if (bars) bars.style.opacity = '0.25';
+          if (label) {
+            label.textContent = 'MUTE';
+            label.className = 'text-[10px] font-bold text-slate-500';
+          }
+        } else {
+          if (bars) bars.style.opacity = '1';
+          if (label) {
+            label.textContent = 'SFX';
+            label.className = 'text-[10px] font-bold text-cyan-300';
+          }
+          this.pop();
+        }
+        return this.muted;
+      },
+
+      pop() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(980, now + 0.08);
+          gain.gain.setValueAtTime(0.16, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } catch (e) {}
+      },
+
+      ding() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          [880, 1760].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const start = now + idx * 0.09;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0.14, start);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(start);
+            osc.stop(start + 0.24);
+          });
+        } catch (e) {}
+      },
+
+      success() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const start = now + idx * 0.07;
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, start);
+            gain.gain.setValueAtTime(0.18, start);
+            gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(start);
+            osc.stop(start + 0.38);
+          });
+        } catch (e) {}
+      },
+
+      bass() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(120, now);
+          osc.frequency.exponentialRampToValueAtTime(35, now + 0.24);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        } catch (e) {}
+      },
+
+      bubble() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(820, now + 0.1);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.13);
+        } catch (e) {}
+      },
+
+      error() {
+        if (this.muted) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(140, now);
+          osc.frequency.setValueAtTime(105, now + 0.08);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        } catch (e) {}
+      }
+    };
+
+    // SPARKLE BURST ON TAP
+    function triggerSparkles(x, y) {
+      const colors = ['#6366f1', '#06b6d4', '#eab308', '#a855f7', '#ffffff'];
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div');
+        p.className = 'sparkle-particle';
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.floor(Math.random() * 5) + 3;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.backgroundColor = color;
+        p.style.boxShadow = `0 0 8px ${color}`;
+        p.style.left = x + 'px';
+        p.style.top = y + 'px';
+        document.body.appendChild(p);
+
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 55 + 25;
+        const targetX = Math.cos(angle) * distance;
+        const targetY = Math.sin(angle) * distance;
+
+        requestAnimationFrame(() => {
+          p.style.transform = `translate(calc(-50% + ${targetX}px), calc(-50% + ${targetY}px)) scale(0)`;
+          p.style.opacity = '0';
+        });
+
+        setTimeout(() => p.remove(), 650);
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('button, [role="button"], a, input, select');
+      if (target) {
+        SoundSystem.pop();
+        if (e.clientX && e.clientY) {
+          triggerSparkles(e.clientX, e.clientY);
+        }
+      }
+    });
+
+    // TOAST NOTIFICATIONS
+    function showToast(message, type = 'info', duration = 3500) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      
+      let borderStyle = 'border-slate-700 bg-slate-900/90 text-slate-100';
+      let icon = 'info';
+      if (type === 'success') {
+        borderStyle = 'neon-cyan bg-[#0a1b2a]/95 text-cyan-200';
+        icon = 'check-circle-2';
+      } else if (type === 'error') {
+        borderStyle = 'neon-indigo bg-[#1c0e2a]/95 text-rose-200';
+        icon = 'alert-triangle';
+      } else if (type === 'warning') {
+        borderStyle = 'neon-gold bg-[#261c0a]/95 text-amber-200';
+        icon = 'alert-circle';
+      }
+
+      toast.className = `p-3 rounded-xl border flex items-center gap-2.5 text-xs font-semibold shadow-2xl backdrop-blur-xl transition-all duration-300 transform translate-y-[-10px] opacity-0 ${borderStyle}`;
+      toast.innerHTML = `
+        <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+        <div class="flex-1">${escapeHtml(message)}</div>
+      `;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-[-10px]', 'opacity-0');
+        toast.classList.add('translate-y-0', 'opacity-100');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) return 'Just now';
+      try {
+        const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return d.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch (e) {
+        return 'Recently';
+      }
+    }
+
+    // ========================================================
+    // RESILIENT PUBLIC SYNC & FIRESTORE DATA BRIDGE
+    // Clean, empty database with persistent login
+    // ========================================================
+    const HubStore = {
+      firestoreAvailable: false,
+
+      // 100% CLEAN EMPTY COLLECTIONS (NO DUMMY EXAMPLES)
+      accounts: new Map(),
+      pyqs: [],
+      notices: [],
+      mocks: [],
+      chats: [],
+
+      subscribers: {
+        accounts: new Set(),
+        pyqs: new Set(),
+        notices: new Set(),
+        mocks: new Set(),
+        chats: new Set()
+      },
+
+      channel: null,
+
+      init() {
+        // Pre-populate core leadership accounts so Haider, Aritra, Ranbir, and Gentleman can log in
+        Object.values(LEADERSHIP_ACCOUNTS).forEach(acc => {
+          this.accounts.set(acc.nameLower, { ...acc });
+        });
+
+        try {
+          if (typeof BroadcastChannel !== 'undefined') {
+            this.channel = new BroadcastChannel('qp_2_0_hub_sync');
+            this.channel.onmessage = (event) => {
+              const { type, payload } = event.data || {};
+              if (type === 'ACCOUNT_UPSERT') {
+                this.accounts.set(payload.nameLower, payload);
+                this.notify('accounts');
+              } else if (type === 'ACCOUNT_DELETE') {
+                this.accounts.delete(payload);
+                this.notify('accounts');
+              } else if (type === 'PYQ_UPSERT') {
+                const idx = this.pyqs.findIndex(p => p.id === payload.id);
+                if (idx >= 0) this.pyqs[idx] = payload;
+                else this.pyqs.unshift(payload);
+                this.notify('pyqs');
+              } else if (type === 'PYQ_DELETE') {
+                this.pyqs = this.pyqs.filter(p => p.id !== payload);
+                this.notify('pyqs');
+              } else if (type === 'NOTICE_UPSERT') {
+                const idx = this.notices.findIndex(n => n.id === payload.id);
+                if (idx >= 0) this.notices[idx] = payload;
+                else this.notices.unshift(payload);
+                this.notify('notices');
+              } else if (type === 'NOTICE_DELETE') {
+                this.notices = this.notices.filter(n => n.id !== payload);
+                this.notify('notices');
+              } else if (type === 'MOCK_UPSERT') {
+                const idx = this.mocks.findIndex(m => m.id === payload.id);
+                if (idx >= 0) this.mocks[idx] = payload;
+                else this.mocks.unshift(payload);
+                this.notify('mocks');
+              } else if (type === 'MOCK_DELETE') {
+                this.mocks = this.mocks.filter(m => m.id !== payload);
+                this.notify('mocks');
+              } else if (type === 'CHAT_ADD') {
+                if (!this.chats.some(c => c.id === payload.id)) {
+                  this.chats.push(payload);
+                  if (this.chats.length > 60) this.chats.shift();
+                  this.notify('chats', true);
+                }
+              }
+            };
+          }
+        } catch (e) {}
+
+        // Check if user session exists in memory / storage
+        this.restorePersistentSession();
+      },
+
+      restorePersistentSession() {
+        try {
+          const savedUser = sessionStorage.getItem('qp2_session_user');
+          if (savedUser) {
+            const parsed = JSON.parse(savedUser);
+            if (parsed && parsed.nameLower) {
+              const fresh = this.accounts.get(parsed.nameLower) || parsed;
+              App.currentUser = fresh;
+            }
+          }
+        } catch (e) {}
+      },
+
+      persistSession(user) {
+        try {
+          if (user) {
+            sessionStorage.setItem('qp2_session_user', JSON.stringify(user));
+          } else {
+            sessionStorage.removeItem('qp2_session_user');
+          }
+        } catch (e) {}
+      },
+
+      notify(collectionName, isNewIncoming = false) {
+        const subs = this.subscribers[collectionName];
+        if (subs) {
+          let data = [];
+          if (collectionName === 'accounts') data = Array.from(this.accounts.values());
+          else if (collectionName === 'pyqs') data = this.pyqs;
+          else if (collectionName === 'notices') data = this.notices;
+          else if (collectionName === 'mocks') data = this.mocks;
+          else if (collectionName === 'chats') data = this.chats;
+          subs.forEach(fn => fn(data, isNewIncoming));
+        }
+      },
+
+      subscribe(collectionName, callback) {
+        if (!this.subscribers[collectionName]) return () => {};
+        this.subscribers[collectionName].add(callback);
+        let initialData = [];
+        if (collectionName === 'accounts') initialData = Array.from(this.accounts.values());
+        else if (collectionName === 'pyqs') initialData = this.pyqs;
+        else if (collectionName === 'notices') initialData = this.notices;
+        else if (collectionName === 'mocks') initialData = this.mocks;
+        else if (collectionName === 'chats') initialData = this.chats;
+        callback(initialData);
+
+        return () => {
+          this.subscribers[collectionName].delete(callback);
+        };
+      },
+
+      // ACCOUNTS
+      async getAccount(nameLower) {
+        // Check Firestore first if active
+        if (db && this.firestoreAvailable) {
+          try {
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1800));
+            const docSnap = await Promise.race([
+              db.collection('gc_accounts').doc(nameLower).get(),
+              timeout
+            ]);
+            if (docSnap && docSnap.exists) {
+              const data = docSnap.data();
+              this.accounts.set(nameLower, data);
+              return data;
+            }
+          } catch (e) {}
+        }
+        return this.accounts.get(nameLower) || null;
+      },
+
+      async saveAccount(nameLower, data) {
+        this.accounts.set(nameLower, data);
+        this.notify('accounts');
+        if (this.channel) {
+          this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: data });
+        }
+        if (db && this.firestoreAvailable) {
+          db.collection('gc_accounts').doc(nameLower).set(data).catch(() => {});
+        }
+        return true;
+      },
+
+      async updateAccountPassword(nameLower, newPass) {
+        const acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.myPass = newPass;
+          acc.updatedAt = new Date();
+          this.notify('accounts');
+          if (this.channel) {
+            this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
+          }
+        }
+        if (db && this.firestoreAvailable) {
+          db.collection('gc_accounts').doc(nameLower).update({
+            myPass: newPass,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }).catch(() => {});
+        }
+        return true;
+      },
+
+      async updateRole(nameLower, newRole) {
+        const acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.role = newRole;
+          this.notify('accounts');
+          if (this.channel) {
+            this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
+          }
+        }
+        if (db && this.firestoreAvailable) {
+          db.collection('gc_accounts').doc(nameLower).update({ role: newRole }).catch(() => {});
+        }
+      },
+
+      async approveAccount(nameLower, approvedBy) {
+        const acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.status = 'approved';
+          acc.approvedBy = approvedBy;
+          acc.approvedAt = new Date();
+          this.notify('accounts');
+          if (this.channel) {
+            this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
+          }
+        }
+        if (db && this.firestoreAvailable) {
+          db.collection('gc_accounts').doc(nameLower).update({ status: 'approved' }).catch(() => {});
+        }
+      },
+
+      async rejectAccount(nameLower) {
+        this.accounts.delete(nameLower);
+        this.notify('accounts');
+        if (this.channel) {
+          this.channel.postMessage({ type: 'ACCOUNT_DELETE', payload: nameLower });
+        }
+        if (db && this.firestoreAvailable) {
+          db.collection('gc_accounts').doc(nameLower).delete().catch(() => {});
+        }
+      },
+
+      // PYQS CRUD
+      async addPyq(item) {
+        const full = {
+          id: 'pyq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          ...item,
+          createdAt: new Date()
+        };
+        this.pyqs.unshift(full);
+        this.notify('pyqs');
+        if (this.channel) this.channel.postMessage({ type: 'PYQ_UPSERT', payload: full });
+        if (db && this.firestoreAvailable) db.collection('pyqs').add(full).catch(() => {});
+        return full;
+      },
+
+      async editPyq(id, updatedFields) {
+        const idx = this.pyqs.findIndex(p => p.id === id);
+        if (idx >= 0) {
+          this.pyqs[idx] = { ...this.pyqs[idx], ...updatedFields, updatedAt: new Date() };
+          this.notify('pyqs');
+          if (this.channel) this.channel.postMessage({ type: 'PYQ_UPSERT', payload: this.pyqs[idx] });
+        }
+      },
+
+      async deletePyq(id) {
+        this.pyqs = this.pyqs.filter(p => p.id !== id);
+        this.notify('pyqs');
+        if (this.channel) this.channel.postMessage({ type: 'PYQ_DELETE', payload: id });
+      },
+
+      // NOTICES CRUD
+      async addNotice(item) {
+        const full = {
+          id: 'not_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          ...item,
+          createdAt: new Date()
+        };
+        this.notices.unshift(full);
+        this.notify('notices');
+        if (this.channel) this.channel.postMessage({ type: 'NOTICE_UPSERT', payload: full });
+        if (db && this.firestoreAvailable) db.collection('notices').add(full).catch(() => {});
+        return full;
+      },
+
+      async editNotice(id, updatedFields) {
+        const idx = this.notices.findIndex(n => n.id === id);
+        if (idx >= 0) {
+          this.notices[idx] = { ...this.notices[idx], ...updatedFields, updatedAt: new Date() };
+          this.notify('notices');
+          if (this.channel) this.channel.postMessage({ type: 'NOTICE_UPSERT', payload: this.notices[idx] });
+        }
+      },
+
+      async deleteNotice(id) {
+        this.notices = this.notices.filter(n => n.id !== id);
+        this.notify('notices');
+        if (this.channel) this.channel.postMessage({ type: 'NOTICE_DELETE', payload: id });
+      },
+
+      // MOCKS CRUD
+      async addMock(item) {
+        const full = {
+          id: 'mock_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          ...item,
+          createdAt: new Date()
+        };
+        this.mocks.unshift(full);
+        this.notify('mocks');
+        if (this.channel) this.channel.postMessage({ type: 'MOCK_UPSERT', payload: full });
+        if (db && this.firestoreAvailable) db.collection('mocks').add(full).catch(() => {});
+        return full;
+      },
+
+      async editMock(id, updatedFields) {
+        const idx = this.mocks.findIndex(m => m.id === id);
+        if (idx >= 0) {
+          this.mocks[idx] = { ...this.mocks[idx], ...updatedFields, updatedAt: new Date() };
+          this.notify('mocks');
+          if (this.channel) this.channel.postMessage({ type: 'MOCK_UPSERT', payload: this.mocks[idx] });
+        }
+      },
+
+      async deleteMock(id) {
+        this.mocks = this.mocks.filter(m => m.id !== id);
+        this.notify('mocks');
+        if (this.channel) this.channel.postMessage({ type: 'MOCK_DELETE', payload: id });
+      },
+
+      // CHATS
+      async addChat(item) {
+        const full = {
+          id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          ...item,
+          createdAt: new Date()
+        };
+        this.chats.push(full);
+        if (this.chats.length > 60) this.chats.shift();
+        this.notify('chats', true);
+        if (this.channel) this.channel.postMessage({ type: 'CHAT_ADD', payload: full });
+        if (db && this.firestoreAvailable) db.collection('chats').add(full).catch(() => {});
+        return full;
+      }
+    };
+
+    // Initialize HubStore
+    HubStore.init();
+
+    // ========================================================
+    // APP CONTROLLER
+    // ========================================================
+    const App = {
+      currentUser: null,
+      currentAuthTab: 'login', // 'login' | 'create' | 'reset'
+      currentDashboardTab: 'pyqs', // 'pyqs' | 'notices' | 'mocks' | 'chats' | 'admin'
+      splashTimer: null,
+      unsubs: [],
+
+      // Registration state
+      regState: {
+        phoneVerified: false,
+        verifiedPhone: '',
+        gmailVerified: false,
+        verifiedGmail: '',
+        otpConfirmation: null,
+        simulatedOtp: null
+      },
+
+      // Permission Helper: Owner, Co-Founder, CEO, CTO, Admin can ADD, EDIT, DELETE
+      canManage() {
+        if (!this.currentUser) return false;
+        const role = this.currentUser.role;
+        return ['Owner', 'Co-Founder', 'CEO', 'CTO', 'Admin'].includes(role);
+      },
+
+      init() {
+        const soundBtn = document.getElementById('sound-toggle-btn');
+        if (soundBtn) soundBtn.onclick = () => SoundSystem.toggle();
+
+        // Check if already authenticated via persistent session
+        if (this.currentUser) {
+          this.renderDashboard();
+        } else {
+          // Render SPLASH SCREEN FIRST
+          this.renderSplashScreen();
+        }
+      },
+
+      // ========================================================
+      // 1. NEW SPLASH SCREEN
+      // ========================================================
+      renderSplashScreen() {
+        const main = document.getElementById('main-content');
+        const header = document.getElementById('main-header');
+        const ticker = document.getElementById('dashboard-ticker');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        if (header) header.classList.add('hidden');
+        if (ticker) ticker.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+
+        main.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 relative">
+            <!-- Skip Button -->
+            <button onclick="App.skipSplash()" class="absolute top-2 right-2 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/60 transition-all flex items-center gap-1 shadow-lg">
+              <span>SKIP</span>
+              <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+
+            <!-- Big Centered QP Logo with Glow Pulse -->
+            <div class="mb-6 relative flex items-center justify-center">
+              <div class="w-36 h-36 rounded-full logo-pulse-glow flex items-center justify-center">
+                <img src="/logo.png" alt="QP 2.0 HUB Logo" class="w-36 h-36 rounded-full object-contain drop-shadow-[0_0_30px_rgba(79,70,229,0.85)]">
+              </div>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-3xl font-extrabold tracking-tight shimmer-gold font-display mb-1">
+              QP 2.0 HUB
+            </h1>
+            <p class="text-xs text-indigo-300 font-semibold tracking-wider uppercase mb-8">
+              Official Education Platform
+            </p>
+
+            <!-- Team Credits Box -->
+            <div class="w-full max-w-[320px] glass-card neon-indigo rounded-2xl p-4 mb-8 space-y-2.5 text-left shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">LEADERSHIP TEAM</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-medium">OWNER</span>
+                <span class="font-extrabold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">HAIDER</span>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-medium">CO-FOUNDER</span>
+                <span class="font-extrabold text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">ARITRA</span>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-medium">CEO</span>
+                <span class="font-extrabold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/30">RANBIR</span>
+              </div>
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400 font-medium">C.T.O</span>
+                <span class="font-extrabold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30">GENTLEMAN</span>
+              </div>
+            </div>
+
+            <!-- 3s Countdown Progress Bar -->
+            <div class="w-full max-w-[200px] bg-slate-800/80 rounded-full h-1.5 overflow-hidden mb-2">
+              <div id="splash-progress" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-0 transition-all duration-3000 ease-linear"></div>
+            </div>
+            <p class="text-[10px] text-slate-400 font-mono">Entering Hub in 3 seconds...</p>
+          </div>
+        `;
+        lucide.createIcons();
+
+        // Animate progress bar
+        setTimeout(() => {
+          const bar = document.getElementById('splash-progress');
+          if (bar) bar.style.width = '100%';
+        }, 50);
+
+        // Auto redirect to Login after 3 seconds
+        if (this.splashTimer) clearTimeout(this.splashTimer);
+        this.splashTimer = setTimeout(() => {
+          this.skipSplash();
+        }, 3200);
+      },
+
+      skipSplash() {
+        if (this.splashTimer) clearTimeout(this.splashTimer);
+        this.renderAuthView();
+      },
+
+      // ========================================================
+      // 2. AUTHENTICATION VIEW (LOGIN / CREATE ID / RESET PASS)
+      // ========================================================
+      switchAuthTab(tab) {
+        this.currentAuthTab = tab;
+        this.renderAuthView();
+      },
+
+      renderAuthView() {
+        const main = document.getElementById('main-content');
+        const header = document.getElementById('main-header');
+        const ticker = document.getElementById('dashboard-ticker');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        if (header) {
+          header.classList.remove('hidden');
+          header.classList.add('flex');
+        }
+        if (ticker) ticker.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+
+        document.getElementById('header-user-action').innerHTML = '';
+
+        main.innerHTML = `
+          <!-- Brand Badge Header -->
+          <div class="mb-4 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full mb-2">
+              <img src="/logo.png" alt="QP Logo" class="w-full h-full rounded-full object-contain drop-shadow-[0_0_20px_rgba(79,70,229,0.7)]">
+            </div>
+            <h2 class="text-xl font-extrabold text-white tracking-tight">
+              QP 2.0 HUB
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Role-Based Education Portal & Resource Hub
+            </p>
+          </div>
+
+          <!-- Auth Card with Glassmorphism -->
+          <div id="auth-card" class="glass-card neon-indigo rounded-2xl p-5 mb-4 transition-all shadow-2xl">
+            <!-- 3 Tabs Header (NO FORM TAG) -->
+            <div class="grid grid-cols-3 gap-1 p-1 bg-[#090c22]/90 rounded-xl border border-slate-800 mb-5">
+              <button onclick="App.switchAuthTab('login')" class="py-2 text-[11px] font-bold rounded-lg transition-all ${this.currentAuthTab === 'login' ? 'bg-gradient-to-r from-indigo-600 to-brand-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}">
+                LOGIN HUB
+              </button>
+              <button onclick="App.switchAuthTab('create')" class="py-2 text-[11px] font-bold rounded-lg transition-all ${this.currentAuthTab === 'create' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}">
+                CREATE ID
+              </button>
+              <button onclick="App.switchAuthTab('reset')" class="py-2 text-[11px] font-bold rounded-lg transition-all ${this.currentAuthTab === 'reset' ? 'bg-gradient-to-r from-amber-600 to-yellow-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200'}">
+                RESET PASS
+              </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div id="auth-tab-content">
+              ${this.currentAuthTab === 'login' ? this.getLoginTabHtml() : ''}
+              ${this.currentAuthTab === 'create' ? this.getCreateTabHtml() : ''}
+              ${this.currentAuthTab === 'reset' ? this.getResetTabHtml() : ''}
+            </div>
+          </div>
+
+          <!-- Role Access Notice -->
+          <div class="glass-card rounded-xl p-3 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+            <div class="flex items-center gap-1.5 text-slate-200 font-semibold">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+              Verified Role Architecture
+            </div>
+            <p>• Roles: <b class="text-amber-300">Owner</b>, <b class="text-cyan-300">Co-Founder</b>, <b class="text-indigo-300">CEO</b>, <b class="text-purple-300">CTO</b>, <b class="text-slate-200">Admin</b>, and <b class="text-emerald-300">Student</b>.</p>
+            <p>• Students have view-only access. Staff have Add, Edit, and Delete controls.</p>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      // LOGIN TAB HTML (NO <form> TAG)
+      getLoginTabHtml() {
+        return `
+          <div class="space-y-3.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name</label>
+              <div class="relative">
+                <i data-lucide="user" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                <input id="login-gc-name" type="text" placeholder="e.g. haider or your GC Name" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_12px_rgba(99,102,241,0.4)]">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Personal Password</label>
+              <div class="relative">
+                <i data-lucide="lock" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                <input id="login-password" type="password" placeholder="••••••••" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:shadow-[0_0_12px_rgba(99,102,241,0.4)]">
+              </div>
+            </div>
+
+            <button onclick="App.handleLogin()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs tracking-wide text-white flex items-center justify-center gap-2 mt-2">
+              <i data-lucide="log-in" class="w-4 h-4"></i>
+              ENTER HUB DASHBOARD
+            </button>
+
+            <div class="pt-2 text-center">
+              <button onclick="App.switchAuthTab('create')" class="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">
+                New student? Create ID →
+              </button>
+            </div>
+          </div>
+        `;
+      },
+
+      // CREATE ID TAB HTML (NO <form> TAG)
+      getCreateTabHtml() {
+        return `
+          <div class="space-y-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name (Unique ID)</label>
+              <div class="relative">
+                <i data-lucide="at-sign" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                <input id="reg-gc-name" type="text" placeholder="e.g. subho_student" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Personal Password (min 6 chars)</label>
+              <div class="relative">
+                <i data-lucide="key" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                <input id="reg-password" type="password" placeholder="Min 6 characters" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">
+                Access Key
+                <span class="text-[10px] text-slate-400 font-normal">(Leave blank for Student ID)</span>
+              </label>
+              <div class="relative">
+                <i data-lucide="shield" class="absolute left-3 top-3 w-4 h-4 text-slate-400"></i>
+                <input id="reg-role-key" type="text" placeholder="Optional staff access key" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 uppercase font-mono focus:outline-none focus:border-indigo-400">
+              </div>
+              <p class="text-[9px] text-slate-400 mt-1">Normal registrations default to Student role.</p>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Phone Number (+91 mandatory)</label>
+              <input id="reg-phone" type="tel" value="+91" placeholder="+919876543210" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Email Address</label>
+              <input id="reg-gmail" type="email" placeholder="student@gmail.com" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+
+            <button onclick="App.handleCreateAccount()" class="w-full btn-glow-cyan py-2.5 rounded-xl font-bold text-xs tracking-wide text-white flex items-center justify-center gap-2 mt-3">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              REGISTER ID
+            </button>
+          </div>
+        `;
+      },
+
+      // RESET PASS TAB HTML
+      getResetTabHtml() {
+        return `
+          <div class="space-y-3.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name</label>
+              <input id="reset-gc-name" type="text" placeholder="Your registered GC Name" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Registered Phone or Email</label>
+              <input id="reset-contact" type="text" placeholder="+91... or email@gmail.com" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">New Personal Password (min 6)</label>
+              <input id="reset-new-password" type="password" placeholder="New password" class="w-full bg-[#0d1029] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+            </div>
+
+            <button onclick="App.handleResetPassword()" class="w-full btn-glow-gold py-2.5 rounded-xl font-bold text-xs tracking-wide text-white flex items-center justify-center gap-2 mt-2">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              UPDATE PASSWORD
+            </button>
+          </div>
+        `;
+      },
+
+      // LOGIN SUBMISSION (Persistent)
+      async handleLogin() {
+        const nameInput = document.getElementById('login-gc-name');
+        const passInput = document.getElementById('login-password');
+
+        const rawName = nameInput ? nameInput.value.trim() : '';
+        const password = passInput ? passInput.value.trim() : '';
+        const nameLower = rawName.toLowerCase();
+
+        if (!nameLower || !password) {
+          this.triggerCardShake();
+          showToast('Please enter both GC Name and Password', 'error');
+          return;
+        }
+
+        try {
+          showToast('Authenticating with Hub...', 'info');
+          let userData = await HubStore.getAccount(nameLower);
+
+          // If leadership account, ensure initialized
+          if (!userData && LEADERSHIP_ACCOUNTS[nameLower]) {
+            userData = { ...LEADERSHIP_ACCOUNTS[nameLower] };
+            await HubStore.saveAccount(nameLower, userData);
+          }
+
+          if (!userData) {
+            this.triggerCardShake();
+            showToast('Account not found! Check your GC Name.', 'error');
+            return;
+          }
+
+          if (userData.myPass !== password) {
+            this.triggerCardShake();
+            showToast('Invalid password! Please try again.', 'error');
+            return;
+          }
+
+          if (userData.status !== 'approved') {
+            SoundSystem.error();
+            this.triggerCardShake();
+            showToast('Account is PENDING approval from an Owner or Admin.', 'warning', 5000);
+            return;
+          }
+
+          // Set persistent user session
+          this.currentUser = { ...userData, id: nameLower };
+          HubStore.persistSession(this.currentUser);
+
+          SoundSystem.success();
+          showToast(`Welcome, ${this.currentUser.name} (${this.currentUser.role})!`, 'success');
+          this.renderDashboard();
+        } catch (err) {
+          this.triggerCardShake();
+          showToast('Login failed: ' + err.message, 'error');
+        }
+      },
+
+      // CREATE ACCOUNT (Prevents everyone becoming owner)
+      async handleCreateAccount() {
+        const nameInput = document.getElementById('reg-gc-name');
+        const passInput = document.getElementById('reg-password');
+        const keyInput = document.getElementById('reg-role-key');
+        const phoneInput = document.getElementById('reg-phone');
+        const gmailInput = document.getElementById('reg-gmail');
+
+        const rawName = nameInput ? nameInput.value.trim() : '';
+        const myPass = passInput ? passInput.value.trim() : '';
+        const rawKey = keyInput ? keyInput.value.trim().toUpperCase() : '';
+        const phone = phoneInput ? phoneInput.value.trim() : '';
+        const gmail = gmailInput ? gmailInput.value.trim() : '';
+
+        const nameLower = rawName.toLowerCase().replace(/[^a-z0-9_]/g, '');
+
+        if (!nameLower || nameLower.length < 3) {
+          this.triggerCardShake();
+          showToast('GC Name must be at least 3 letters or numbers', 'error');
+          return;
+        }
+
+        if (myPass.length < 6) {
+          this.triggerCardShake();
+          showToast('Personal Password must be at least 6 characters', 'error');
+          return;
+        }
+
+        if (!phone.startsWith('+91') || phone.length < 13) {
+          this.triggerCardShake();
+          showToast('Valid +91 phone number is mandatory', 'error');
+          return;
+        }
+
+        if (!gmail || !gmail.includes('@')) {
+          this.triggerCardShake();
+          showToast('Valid Email address is mandatory', 'error');
+          return;
+        }
+
+        try {
+          const existingAcc = await HubStore.getAccount(nameLower);
+          if (existingAcc) {
+            this.triggerCardShake();
+            showToast(`GC Name "${nameLower}" is already taken!`, 'error');
+            return;
+          }
+
+          // STRICT ROLE ASSIGNMENT: Prevents everyone becoming Owner
+          let role = 'Student'; // Default role for everyone!
+          let autoApproved = false;
+
+          if (nameLower === 'haider') {
+            role = 'Owner';
+            autoApproved = true;
+          } else if (nameLower === 'aritra') {
+            role = 'Co-Founder';
+            autoApproved = true;
+          } else if (nameLower === 'ranbir') {
+            role = 'CEO';
+            autoApproved = true;
+          } else if (nameLower === 'gentleman') {
+            role = 'CTO';
+            autoApproved = true;
+          } else if (rawKey === 'QP2.0OWNER@2026') {
+            // Only Haider can be Owner, or special key
+            role = 'Owner';
+            autoApproved = true;
+          } else if (rawKey === 'QP2.0ADMIN@2026') {
+            role = 'Admin';
+            autoApproved = true;
+          } else {
+            // General Student Registration
+            role = 'Student';
+            autoApproved = true; // Instant access for students
+          }
+
+          const newAccountData = {
+            name: rawName,
+            nameLower: nameLower,
+            myPass: myPass,
+            role: role,
+            status: autoApproved ? 'approved' : 'pending',
+            phone: phone,
+            gmail: gmail,
+            xp: 100,
+            createdAt: new Date()
+          };
+
+          await HubStore.saveAccount(nameLower, newAccountData);
+
+          SoundSystem.success();
+          showToast(`Account registered as ${role}! Please log in.`, 'success', 4000);
+          this.switchAuthTab('login');
+        } catch (err) {
+          this.triggerCardShake();
+          showToast('Registration error: ' + err.message, 'error');
+        }
+      },
+
+      // RESET PASSWORD
+      async handleResetPassword() {
+        const nameInput = document.getElementById('reset-gc-name');
+        const contactInput = document.getElementById('reset-contact');
+        const passInput = document.getElementById('reset-new-password');
+
+        const rawName = nameInput ? nameInput.value.trim() : '';
+        const contact = contactInput ? contactInput.value.trim().toLowerCase() : '';
+        const newPass = passInput ? passInput.value.trim() : '';
+        const nameLower = rawName.toLowerCase();
+
+        if (!nameLower || !contact || !newPass) {
+          this.triggerCardShake();
+          showToast('All fields are required to reset password', 'error');
+          return;
+        }
+
+        if (newPass.length < 6) {
+          this.triggerCardShake();
+          showToast('New password must be at least 6 characters', 'error');
+          return;
+        }
+
+        try {
+          const acc = await HubStore.getAccount(nameLower);
+          if (!acc) {
+            this.triggerCardShake();
+            showToast('Account not found with this GC Name', 'error');
+            return;
+          }
+
+          const phoneMatch = acc.phone && acc.phone.includes(contact);
+          const gmailMatch = acc.gmail && acc.gmail.toLowerCase() === contact;
+
+          if (!phoneMatch && !gmailMatch) {
+            this.triggerCardShake();
+            showToast('Contact does not match registered details', 'error');
+            return;
+          }
+
+          await HubStore.updateAccountPassword(nameLower, newPass);
+          SoundSystem.success();
+          showToast('Password updated successfully! Please login.', 'success');
+          this.switchAuthTab('login');
+        } catch (err) {
+          this.triggerCardShake();
+          showToast('Reset error: ' + err.message, 'error');
+        }
+      },
+
+      triggerCardShake() {
+        SoundSystem.error();
+        const card = document.getElementById('auth-card');
+        if (card) {
+          card.classList.remove('shake-error');
+          void card.offsetWidth;
+          card.classList.add('shake-error');
+        }
+      },
+
+      // LOGOUT
+      logout() {
+        SoundSystem.pop();
+        this.cleanupListeners();
+        this.currentUser = null;
+        HubStore.persistSession(null);
+        showToast('Logged out of QP 2.0 HUB', 'info');
+        this.renderAuthView();
+      },
+
+      cleanupListeners() {
+        this.unsubs.forEach(unsub => {
+          if (typeof unsub === 'function') unsub();
+        });
+        this.unsubs = [];
+      },
+
+      // ========================================================
+      // 3. DASHBOARD VIEW & NAVIGATION
+      // ========================================================
+      renderDashboard() {
+        if (!this.currentUser) {
+          this.renderAuthView();
+          return;
+        }
+
+        const header = document.getElementById('main-header');
+        const ticker = document.getElementById('dashboard-ticker');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        if (header) {
+          header.classList.remove('hidden');
+          header.classList.add('flex');
+        }
+        if (ticker) {
+          ticker.classList.remove('hidden');
+          ticker.classList.add('flex');
+        }
+        if (bottomNav) {
+          bottomNav.classList.remove('hidden');
+          bottomNav.classList.add('flex');
+        }
+
+        // Show Admin button on bottom nav ONLY for leadership roles
+        const adminBtn = document.getElementById('nav-admin-btn');
+        if (adminBtn) {
+          if (this.canManage()) {
+            adminBtn.classList.remove('hidden');
+            adminBtn.classList.add('flex');
+          } else {
+            adminBtn.classList.add('hidden');
+            adminBtn.classList.remove('flex');
+          }
+        }
+
+        // Header User Logout button
+        const userAction = document.getElementById('header-user-action');
+        if (userAction) {
+          userAction.innerHTML = `
+            <button onclick="App.logout()" class="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all flex items-center gap-1 text-[11px] font-bold" title="Logout">
+              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+        }
+
+        this.switchDashboardTab(this.currentDashboardTab || 'pyqs');
+      },
+
+      switchDashboardTab(tab) {
+        this.currentDashboardTab = tab;
+
+        document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+          if (btn.getAttribute('data-tab') === tab) {
+            btn.className = 'nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-indigo-400 font-extrabold shadow-[0_0_15px_rgba(79,70,229,0.3)] bg-indigo-500/15 border border-indigo-500/30';
+          } else {
+            btn.className = 'nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all';
+          }
+        });
+
+        const main = document.getElementById('main-content');
+        main.innerHTML = `
+          <!-- User Profile Status Card -->
+          ${this.getProfileHeaderHtml()}
+
+          <!-- Dynamic Tab Content -->
+          <div id="tab-container" class="mt-3 flex-1 flex flex-col"></div>
+        `;
+        lucide.createIcons();
+
+        if (tab === 'pyqs') this.loadPyqsTab();
+        else if (tab === 'notices') this.loadNoticesTab();
+        else if (tab === 'mocks') this.loadMocksTab();
+        else if (tab === 'chats') this.loadChatsTab();
+        else if (tab === 'admin') this.loadAdminTab();
+      },
+
+      getProfileHeaderHtml() {
+        const u = this.currentUser;
+        const initial = (u.name || 'S').charAt(0).toUpperCase();
+
+        let roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">STUDENT</span>';
+        let avatarBg = 'from-emerald-500 to-teal-600';
+
+        if (u.role === 'Owner') {
+          roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 flex items-center gap-1">👑 OWNER</span>';
+          avatarBg = 'from-amber-400 via-yellow-500 to-amber-600';
+        } else if (u.role === 'Co-Founder') {
+          roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 flex items-center gap-1">⚡ CO-FOUNDER</span>';
+          avatarBg = 'from-cyan-400 to-blue-600';
+        } else if (u.role === 'CEO') {
+          roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 flex items-center gap-1">💼 CEO</span>';
+          avatarBg = 'from-indigo-400 to-purple-600';
+        } else if (u.role === 'CTO') {
+          roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/50 flex items-center gap-1">⚙️ CTO</span>';
+          avatarBg = 'from-purple-400 to-pink-600';
+        } else if (u.role === 'Admin') {
+          roleBadge = '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/50 flex items-center gap-1">🛡️ ADMIN</span>';
+          avatarBg = 'from-blue-500 to-indigo-600';
+        }
+
+        return `
+          <div class="glass-card neon-indigo rounded-2xl p-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-11 h-11 rounded-full bg-gradient-to-tr ${avatarBg} p-[2px] shadow-lg flex-shrink-0">
+                <div class="w-full h-full bg-[#0d1029] rounded-full flex items-center justify-center font-black text-white text-base">
+                  ${initial}
+                </div>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h3 class="text-sm font-extrabold text-white truncate">${escapeHtml(u.name)}</h3>
+                  ${roleBadge}
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-0.5 truncate">
+                  <span class="flex items-center gap-0.5 truncate"><i data-lucide="mail" class="w-2.5 h-2.5 text-indigo-400"></i>${escapeHtml(u.gmail)}</span>
+                  <span>•</span>
+                  <span class="flex items-center gap-0.5"><i data-lucide="phone" class="w-2.5 h-2.5 text-emerald-400"></i>${escapeHtml(u.phone)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Management Status Indicator -->
+            <div class="flex flex-col items-end flex-shrink-0 pl-1">
+              ${this.canManage() ? `
+                <span class="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+                  FULL ACCESS
+                </span>
+              ` : `
+                <span class="px-2 py-0.5 rounded-md text-[9px] font-semibold bg-slate-800 text-slate-400">
+                  STUDENT VIEW
+                </span>
+              `}
+            </div>
+          </div>
+        `;
+      },
+
+      // ========================================================
+      // 4. PYQs TAB (CLEAN EMPTY DB + ADD/EDIT/DELETE PERMISSIONS)
+      // ========================================================
+      loadPyqsTab() {
+        const container = document.getElementById('tab-container');
+        if (!container) return;
+
+        const canEdit = this.canManage();
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
+                PREVIOUS YEAR QUESTIONS (PYQs)
+              </h2>
+              <p class="text-[10px] text-slate-400">Official Board Examination Papers & Solutions</p>
+            </div>
+            ${canEdit ? `
+              <button onclick="App.openAddPyqModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-indigo text-[11px] font-bold text-white flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                Add PYQ
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Subject Filter Pills (English Only) -->
+          <div class="flex gap-1.5 overflow-x-auto pb-2 mb-2 no-scrollbar text-[11px]">
+            <button onclick="App.filterPyqs('All')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold whitespace-nowrap" data-subject="All">All Subjects</button>
+            <button onclick="App.filterPyqs('Physical Science')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="Physical Science">Physical Science</button>
+            <button onclick="App.filterPyqs('Life Science')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="Life Science">Life Science</button>
+            <button onclick="App.filterPyqs('Mathematics')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="Mathematics">Mathematics</button>
+            <button onclick="App.filterPyqs('English')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="English">English</button>
+            <button onclick="App.filterPyqs('History')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="History">History</button>
+            <button onclick="App.filterPyqs('Geography')" class="pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap" data-subject="Geography">Geography</button>
+          </div>
+
+          <!-- PYQs List -->
+          <div id="pyqs-list" class="space-y-2.5"></div>
+
+          <!-- Modal Container -->
+          <div id="pyq-modal-container"></div>
+        `;
+        lucide.createIcons();
+
+        this.currentPyqFilter = 'All';
+        const unsub = HubStore.subscribe('pyqs', (list) => {
+          this.pyqsData = list;
+          this.filterPyqs(this.currentPyqFilter || 'All');
+        });
+        this.unsubs.push(unsub);
+      },
+
+      filterPyqs(subject) {
+        this.currentPyqFilter = subject;
+        document.querySelectorAll('.pyq-filter-btn').forEach(btn => {
+          if (btn.getAttribute('data-subject') === subject) {
+            btn.className = 'pyq-filter-btn px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold whitespace-nowrap';
+          } else {
+            btn.className = 'pyq-filter-btn px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-medium whitespace-nowrap';
+          }
+        });
+
+        if (!this.pyqsData) return;
+        if (subject === 'All') {
+          this.renderPyqList(this.pyqsData);
+        } else {
+          this.renderPyqList(this.pyqsData.filter(p => p.subject === subject));
+        }
+      },
+
+      renderPyqList(list) {
+        const container = document.getElementById('pyqs-list');
+        if (!container) return;
+
+        if (!list || list.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 p-4 glass-card rounded-2xl border border-slate-800 text-xs text-slate-400">
+              <i data-lucide="book-open" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+              <p class="font-semibold text-slate-300">No question papers uploaded yet.</p>
+              ${this.canManage() ? `<p class="text-[11px] text-indigo-400 mt-1 cursor-pointer" onclick="App.openAddPyqModal()">Click "+ Add PYQ" above to create the first paper.</p>` : `<p class="text-[11px] text-slate-500 mt-1">Official PYQ uploads will appear here once published.</p>`}
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        const canManage = this.canManage();
+
+        container.innerHTML = list.map(item => `
+          <div class="glass-card neon-indigo rounded-xl p-3.5 transition-all">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    ${escapeHtml(item.subject)}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    ${escapeHtml(item.year)}
+                  </span>
+                </div>
+                <h4 class="text-xs font-bold text-white mt-1.5 leading-snug">
+                  ${escapeHtml(item.title)}
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">
+                  Uploaded by <span class="text-slate-300 font-semibold">${escapeHtml(item.addedBy || 'Staff')}</span> • ${formatDate(item.createdAt)}
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-1.5 flex-shrink-0">
+                <a href="${escapeHtml(item.link || '#')}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-gradient-to-r from-indigo-600 to-brand-500 text-white text-[10px] font-bold flex items-center justify-center gap-1 hover:opacity-90">
+                  <i data-lucide="external-link" class="w-3 h-3"></i>
+                  Drive Link
+                </a>
+                ${canManage ? `
+                  <div class="flex gap-1">
+                    <button onclick="App.openEditPyqModal('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold">
+                      Edit
+                    </button>
+                    <button onclick="App.deletePyq('${item.id}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
+                      Delete
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      },
+
+      openAddPyqModal() {
+        const modal = document.getElementById('pyq-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="plus-circle" class="w-4 h-4 text-indigo-400"></i>
+                  Add Question Paper
+                </h3>
+                <button onclick="document.getElementById('pyq-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Subject</label>
+                <select id="new-pyq-subject" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                  <option value="Physical Science">Physical Science</option>
+                  <option value="Life Science">Life Science</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English">English</option>
+                  <option value="History">History</option>
+                  <option value="Geography">Geography</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Year</label>
+                <input id="new-pyq-year" type="text" placeholder="e.g. 2025 or 2026 Model" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Title / Description</label>
+                <input id="new-pyq-title" type="text" placeholder="e.g. 2025 Board Examination Paper with Solutions" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Google Drive or Document Link</label>
+                <input id="new-pyq-link" type="url" placeholder="https://drive.google.com/..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <button onclick="App.submitNewPyq()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                PUBLISH PYQ
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async submitNewPyq() {
+        const subject = document.getElementById('new-pyq-subject')?.value;
+        const year = document.getElementById('new-pyq-year')?.value.trim();
+        const title = document.getElementById('new-pyq-title')?.value.trim();
+        const link = document.getElementById('new-pyq-link')?.value.trim();
+
+        if (!year || !link) {
+          SoundSystem.error();
+          showToast('Year and Drive link are required', 'error');
+          return;
+        }
+
+        try {
+          await HubStore.addPyq({
+            subject,
+            year,
+            title: title || `${subject} ${year} Question Paper`,
+            link,
+            addedBy: this.currentUser.name
+          });
+
+          SoundSystem.success();
+          document.getElementById('pyq-modal-container').innerHTML = '';
+          showToast('Question paper uploaded successfully!', 'success');
+        } catch (e) {
+          showToast('Error: ' + e.message, 'error');
+        }
+      },
+
+      openEditPyqModal(id) {
+        const item = this.pyqsData?.find(p => p.id === id);
+        if (!item) return;
+
+        const modal = document.getElementById('pyq-modal-container');
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="edit-3" class="w-4 h-4 text-cyan-400"></i>
+                  Edit Question Paper
+                </h3>
+                <button onclick="document.getElementById('pyq-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Title</label>
+                <input id="edit-pyq-title" type="text" value="${escapeHtml(item.title)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Year</label>
+                <input id="edit-pyq-year" type="text" value="${escapeHtml(item.year)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Google Drive Link</label>
+                <input id="edit-pyq-link" type="url" value="${escapeHtml(item.link)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <button onclick="App.saveEditPyq('${item.id}')" class="w-full btn-glow-cyan py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                SAVE CHANGES
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async saveEditPyq(id) {
+        const title = document.getElementById('edit-pyq-title')?.value.trim();
+        const year = document.getElementById('edit-pyq-year')?.value.trim();
+        const link = document.getElementById('edit-pyq-link')?.value.trim();
+
+        if (!year || !link) {
+          showToast('Year and Link are required', 'error');
+          return;
+        }
+
+        await HubStore.editPyq(id, { title, year, link });
+        SoundSystem.ding();
+        document.getElementById('pyq-modal-container').innerHTML = '';
+        showToast('PYQ updated!', 'success');
+      },
+
+      async deletePyq(id) {
+        if (!confirm('Are you sure you want to delete this question paper?')) return;
+        SoundSystem.bass();
+        await HubStore.deletePyq(id);
+        showToast('Question paper deleted', 'info');
+      },
+
+      // ========================================================
+      // 5. NOTICES TAB (CLEAN EMPTY DB + ADD/EDIT/DELETE)
+      // ========================================================
+      loadNoticesTab() {
+        const container = document.getElementById('tab-container');
+        if (!container) return;
+
+        const canEdit = this.canManage();
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                <i data-lucide="bell" class="w-4 h-4 text-cyan-400"></i>
+                OFFICIAL NOTICES & BULLETINS
+              </h2>
+              <p class="text-[10px] text-slate-400">Exam schedules, syllabus updates, and urgent alerts</p>
+            </div>
+            ${canEdit ? `
+              <button onclick="App.openAddNoticeModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-cyan text-[11px] font-bold text-white flex items-center gap-1">
+                <i data-lucide="megaphone" class="w-3.5 h-3.5"></i>
+                Broadcast
+              </button>
+            ` : ''}
+          </div>
+
+          <div id="notices-list" class="space-y-3"></div>
+          <div id="notice-modal-container"></div>
+        `;
+        lucide.createIcons();
+
+        const unsub = HubStore.subscribe('notices', (list) => {
+          this.renderNoticesList(list);
+        });
+        this.unsubs.push(unsub);
+      },
+
+      renderNoticesList(list) {
+        const container = document.getElementById('notices-list');
+        if (!container) return;
+
+        if (!list || list.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 glass-card rounded-2xl border border-slate-800 text-xs text-slate-400">
+              <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+              <p class="font-semibold text-slate-300">No official announcements posted yet.</p>
+              ${this.canManage() ? `<p class="text-[11px] text-cyan-400 mt-1 cursor-pointer" onclick="App.openAddNoticeModal()">Tap "Broadcast" above to publish an official bulletin.</p>` : ''}
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        const canManage = this.canManage();
+
+        container.innerHTML = list.map(item => {
+          let badgeColor = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+          if (item.category === 'Urgent') badgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse';
+          else if (item.category === 'Routine') badgeColor = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
+
+          return `
+            <div class="glass-card ${item.category === 'Urgent' ? 'neon-indigo' : 'neon-cyan'} rounded-2xl p-4">
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold border ${badgeColor}">
+                  ${escapeHtml(item.category || 'General')}
+                </span>
+                <span class="text-[10px] text-slate-400 flex items-center gap-1 font-mono">
+                  <i data-lucide="clock" class="w-3 h-3 text-slate-400"></i>
+                  ${formatDate(item.createdAt)}
+                </span>
+              </div>
+              <h3 class="text-xs font-extrabold text-white leading-snug">
+                ${escapeHtml(item.title)}
+              </h3>
+              <p class="text-[11px] text-slate-300 mt-1.5 whitespace-pre-line leading-relaxed">
+                ${escapeHtml(item.details)}
+              </p>
+              <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
+                <span>Published by: <b class="text-slate-200">${escapeHtml(item.senderName || 'Staff')}</b> (${escapeHtml(item.senderRole || 'Admin')})</span>
+                ${canManage ? `
+                  <div class="flex gap-1">
+                    <button onclick="App.openEditNoticeModal('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold">
+                      Edit
+                    </button>
+                    <button onclick="App.deleteNotice('${item.id}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
+                      Delete
+                    </button>
+                  </div>
+                ` : `
+                  <i data-lucide="check-check" class="w-3.5 h-3.5 text-cyan-400"></i>
+                `}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      },
+
+      openAddNoticeModal() {
+        const modal = document.getElementById('notice-modal-container');
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="megaphone" class="w-4 h-4 text-cyan-400"></i>
+                  Broadcast Notice
+                </h3>
+                <button onclick="document.getElementById('notice-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Notice Category</label>
+                <select id="new-notice-category" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                  <option value="Urgent">Urgent Alert</option>
+                  <option value="Routine">Examination Routine</option>
+                  <option value="Syllabus">Marks Distribution & Syllabus</option>
+                  <option value="General">General Announcement</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Notice Headline</label>
+                <input id="new-notice-title" type="text" placeholder="e.g. Schedule Update for 2026 Board Examinations" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Details & Instructions</label>
+                <textarea id="new-notice-details" rows="4" placeholder="Enter notice details for students..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white"></textarea>
+              </div>
+
+              <button onclick="App.submitNotice()" class="w-full btn-glow-cyan py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="radio" class="w-4 h-4"></i>
+                BROADCAST NOTICE
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async submitNotice() {
+        const title = document.getElementById('new-notice-title')?.value.trim();
+        const details = document.getElementById('new-notice-details')?.value.trim();
+        const category = document.getElementById('new-notice-category')?.value;
+
+        if (!title || !details) {
+          SoundSystem.error();
+          showToast('Title and details are required', 'error');
+          return;
+        }
+
+        await HubStore.addNotice({
+          title,
+          details,
+          category,
+          senderName: this.currentUser.name,
+          senderRole: this.currentUser.role
+        });
+
+        SoundSystem.ding();
+        document.getElementById('notice-modal-container').innerHTML = '';
+        showToast('Notice broadcasted successfully!', 'success');
+      },
+
+      openEditNoticeModal(id) {
+        const item = this.noticesData?.find(n => n.id === id) || HubStore.notices.find(n => n.id === id);
+        if (!item) return;
+
+        const modal = document.getElementById('notice-modal-container');
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="edit-3" class="w-4 h-4 text-cyan-400"></i>
+                  Edit Notice
+                </h3>
+                <button onclick="document.getElementById('notice-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Title</label>
+                <input id="edit-notice-title" type="text" value="${escapeHtml(item.title)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Details</label>
+                <textarea id="edit-notice-details" rows="4" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">${escapeHtml(item.details)}</textarea>
+              </div>
+
+              <button onclick="App.saveEditNotice('${item.id}')" class="w-full btn-glow-cyan py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                SAVE CHANGES
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async saveEditNotice(id) {
+        const title = document.getElementById('edit-notice-title')?.value.trim();
+        const details = document.getElementById('edit-notice-details')?.value.trim();
+        if (!title || !details) {
+          showToast('Title and details are required', 'error');
+          return;
+        }
+        await HubStore.editNotice(id, { title, details });
+        SoundSystem.ding();
+        document.getElementById('notice-modal-container').innerHTML = '';
+        showToast('Notice updated!', 'success');
+      },
+
+      async deleteNotice(id) {
+        if (!confirm('Are you sure you want to delete this notice?')) return;
+        SoundSystem.bass();
+        await HubStore.deleteNotice(id);
+        showToast('Notice deleted', 'info');
+      },
+
+      // ========================================================
+      // 6. MOCKS TAB (CLEAN EMPTY DB + ADD/EDIT/DELETE)
+      // ========================================================
+      loadMocksTab() {
+        const container = document.getElementById('tab-container');
+        if (!container) return;
+
+        const canEdit = this.canManage();
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                <i data-lucide="file-check-2" class="w-4 h-4 text-yellow-400"></i>
+                MOCK EXAMINATIONS
+              </h2>
+              <p class="text-[10px] text-slate-400">Curated Full Syllabus & Chapter Test Papers</p>
+            </div>
+            ${canEdit ? `
+              <button onclick="App.openAddMockModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-gold text-[11px] font-bold text-white flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                Add Mock
+              </button>
+            ` : ''}
+          </div>
+
+          <div id="mocks-list" class="space-y-2.5"></div>
+          <div id="mock-modal-container"></div>
+        `;
+        lucide.createIcons();
+
+        const unsub = HubStore.subscribe('mocks', (list) => {
+          this.renderMocksList(list);
+        });
+        this.unsubs.push(unsub);
+      },
+
+      renderMocksList(list) {
+        const container = document.getElementById('mocks-list');
+        if (!container) return;
+
+        if (!list || list.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 glass-card rounded-2xl border border-slate-800 text-xs text-slate-400">
+              <i data-lucide="file-question" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+              <p class="font-semibold text-slate-300">No mock tests available yet.</p>
+              ${this.canManage() ? `<p class="text-[11px] text-yellow-400 mt-1 cursor-pointer" onclick="App.openAddMockModal()">Tap "+ Add Mock" above to upload a new practice test.</p>` : ''}
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        const canManage = this.canManage();
+
+        container.innerHTML = list.map(item => `
+          <div class="glass-card neon-gold rounded-2xl p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
+                    ${escapeHtml(item.subject || 'All Subjects')}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">
+                    🎯 ${escapeHtml(item.totalMarks || '90 Marks')}
+                  </span>
+                  <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300">
+                    ⏱️ ${escapeHtml(item.duration || '3 Hours')}
+                  </span>
+                </div>
+                <h3 class="text-xs font-bold text-white mt-1.5 leading-snug">
+                  ${escapeHtml(item.name)}
+                </h3>
+                <p class="text-[10px] text-slate-400 mt-1">
+                  Uploaded by <span class="text-slate-200 font-semibold">${escapeHtml(item.addedBy || 'Staff')}</span> • ${formatDate(item.createdAt)}
+                </p>
+              </div>
+
+              <div class="flex flex-col gap-1.5 flex-shrink-0">
+                <a href="${escapeHtml(item.link || '#')}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-bold flex items-center justify-center gap-1 hover:opacity-90 shadow-md">
+                  <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+                  Start Mock
+                </a>
+                ${canManage ? `
+                  <div class="flex gap-1 justify-end">
+                    <button onclick="App.openEditMockModal('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold">
+                      Edit
+                    </button>
+                    <button onclick="App.deleteMock('${item.id}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
+                      Delete
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      },
+
+      openAddMockModal() {
+        const modal = document.getElementById('mock-modal-container');
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-gold rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="award" class="w-4 h-4 text-yellow-400"></i>
+                  Add Mock Examination
+                </h3>
+                <button onclick="document.getElementById('mock-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Test Title</label>
+                <input id="new-mock-name" type="text" placeholder="e.g. Full Syllabus Grand Mock Test 1" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Subject</label>
+                <select id="new-mock-subject" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                  <option value="Physical Science">Physical Science</option>
+                  <option value="Life Science">Life Science</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English">English</option>
+                  <option value="History">History</option>
+                  <option value="Geography">Geography</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Total Marks</label>
+                  <input id="new-mock-marks" type="text" value="90 Marks" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Duration</label>
+                  <input id="new-mock-duration" type="text" value="3 Hours" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Test Link (Google Form / Drive Document)</label>
+                <input id="new-mock-link" type="url" placeholder="https://forms.gle/... or Google Drive URL" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <button onclick="App.submitMock()" class="w-full btn-glow-gold py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                PUBLISH MOCK TEST
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async submitMock() {
+        const name = document.getElementById('new-mock-name')?.value.trim();
+        const subject = document.getElementById('new-mock-subject')?.value;
+        const totalMarks = document.getElementById('new-mock-marks')?.value.trim();
+        const duration = document.getElementById('new-mock-duration')?.value.trim();
+        const link = document.getElementById('new-mock-link')?.value.trim();
+
+        if (!name || !link) {
+          SoundSystem.error();
+          showToast('Mock title and Link are required', 'error');
+          return;
+        }
+
+        await HubStore.addMock({
+          name,
+          subject,
+          totalMarks: totalMarks || '90 Marks',
+          duration: duration || '3 Hours',
+          link,
+          addedBy: this.currentUser.name
+        });
+
+        SoundSystem.ding();
+        document.getElementById('mock-modal-container').innerHTML = '';
+        showToast('Mock test published successfully!', 'success');
+      },
+
+      openEditMockModal(id) {
+        const item = HubStore.mocks.find(m => m.id === id);
+        if (!item) return;
+
+        const modal = document.getElementById('mock-modal-container');
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="glass-card neon-gold rounded-2xl p-5 w-full max-w-[390px] space-y-3">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5">
+                  <i data-lucide="edit-3" class="w-4 h-4 text-yellow-400"></i>
+                  Edit Mock Test
+                </h3>
+                <button onclick="document.getElementById('mock-modal-container').innerHTML=''" class="text-slate-400 hover:text-white">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Title</label>
+                <input id="edit-mock-name" type="text" value="${escapeHtml(item.name)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Marks</label>
+                  <input id="edit-mock-marks" type="text" value="${escapeHtml(item.totalMarks)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Duration</label>
+                  <input id="edit-mock-duration" type="text" value="${escapeHtml(item.duration)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Test Link</label>
+                <input id="edit-mock-link" type="url" value="${escapeHtml(item.link)}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+              </div>
+
+              <button onclick="App.saveEditMock('${item.id}')" class="w-full btn-glow-gold py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                SAVE CHANGES
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async saveEditMock(id) {
+        const name = document.getElementById('edit-mock-name')?.value.trim();
+        const totalMarks = document.getElementById('edit-mock-marks')?.value.trim();
+        const duration = document.getElementById('edit-mock-duration')?.value.trim();
+        const link = document.getElementById('edit-mock-link')?.value.trim();
+
+        if (!name || !link) {
+          showToast('Title and Link are required', 'error');
+          return;
+        }
+
+        await HubStore.editMock(id, { name, totalMarks, duration, link });
+        SoundSystem.ding();
+        document.getElementById('mock-modal-container').innerHTML = '';
+        showToast('Mock test updated!', 'success');
+      },
+
+      async deleteMock(id) {
+        if (!confirm('Are you sure you want to delete this mock test?')) return;
+        SoundSystem.bass();
+        await HubStore.deleteMock(id);
+        showToast('Mock test deleted', 'info');
+      },
+
+      // ========================================================
+      // 7. ADDA TAB (COMMUNITY LIVE CHAT)
+      // ========================================================
+      loadChatsTab() {
+        const container = document.getElementById('tab-container');
+        if (!container) return;
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between mb-2">
+            <div>
+              <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                <i data-lucide="messages-square" class="w-4 h-4 text-cyan-400"></i>
+                COMMUNITY ADDA (LIVE CHAT)
+              </h2>
+              <p class="text-[10px] text-slate-400">Official student and staff community discussion</p>
+            </div>
+            <div class="flex items-center gap-1 text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              LIVE
+            </div>
+          </div>
+
+          <!-- Chat Window -->
+          <div class="glass-card neon-cyan rounded-2xl flex-1 flex flex-col h-[52vh] max-h-[52vh] overflow-hidden">
+            <div id="chat-messages" class="flex-1 p-3 overflow-y-auto space-y-2.5"></div>
+
+            <!-- Emoji Quick Bar -->
+            <div class="px-3 py-1.5 bg-[#090c23]/90 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto no-scrollbar text-sm">
+              <button onclick="App.insertEmoji('🎯')" class="hover:scale-125 transition-transform">🎯</button>
+              <button onclick="App.insertEmoji('📚')" class="hover:scale-125 transition-transform">📚</button>
+              <button onclick="App.insertEmoji('🔥')" class="hover:scale-125 transition-transform">🔥</button>
+              <button onclick="App.insertEmoji('🚀')" class="hover:scale-125 transition-transform">🚀</button>
+              <button onclick="App.insertEmoji('💡')" class="hover:scale-125 transition-transform">💡</button>
+              <button onclick="App.insertEmoji('💯')" class="hover:scale-125 transition-transform">💯</button>
+              <button onclick="App.insertEmoji('👏')" class="hover:scale-125 transition-transform">👏</button>
+              <button onclick="App.insertEmoji('👍')" class="hover:scale-125 transition-transform">👍</button>
+            </div>
+
+            <!-- Message Input Area (NO <form> TAG) -->
+            <div class="p-2.5 bg-[#0b0e27] border-t border-slate-800 flex items-center gap-2">
+              <input id="chat-text-input" type="text" placeholder="Type a message... (Press Enter)" class="flex-1 bg-[#101438] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400">
+              <button onclick="App.sendChatMessage()" class="p-2 rounded-xl btn-glow-cyan text-white flex-shrink-0 flex items-center justify-center">
+                <i data-lucide="send" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+
+        const chatInput = document.getElementById('chat-text-input');
+        if (chatInput) {
+          chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              App.sendChatMessage();
+            }
+          });
+        }
+
+        let firstLoad = true;
+        const unsub = HubStore.subscribe('chats', (messages, isNewIncoming) => {
+          this.renderChatMessages(messages);
+          if (!firstLoad && isNewIncoming) {
+            SoundSystem.bubble();
+          }
+          firstLoad = false;
+        });
+        this.unsubs.push(unsub);
+      },
+
+      insertEmoji(emoji) {
+        const input = document.getElementById('chat-text-input');
+        if (input) {
+          input.value += emoji;
+          input.focus();
+        }
+      },
+
+      renderChatMessages(messages) {
+        const box = document.getElementById('chat-messages');
+        if (!box) return;
+
+        if (!messages || messages.length === 0) {
+          box.innerHTML = `
+            <div class="text-center py-12 text-xs text-slate-400">
+              <i data-lucide="messages-square" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
+              <p class="font-semibold text-slate-300">No chat messages yet.</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">Start the discussion with fellow students and staff!</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        box.innerHTML = messages.map(msg => {
+          const isMe = this.currentUser && (msg.senderLower === this.currentUser.nameLower);
+          
+          let roleTag = '';
+          if (msg.senderRole === 'Owner') {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">OWNER</span>';
+          } else if (msg.senderRole === 'Co-Founder') {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">CO-FOUNDER</span>';
+          } else if (msg.senderRole === 'CEO') {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">CEO</span>';
+          } else if (msg.senderRole === 'CTO') {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40">CTO</span>';
+          } else if (msg.senderRole === 'Admin') {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/40">ADMIN</span>';
+          } else {
+            roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300">STUDENT</span>';
+          }
+
+          return `
+            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+              <div class="flex items-center gap-1.5 mb-0.5 text-[10px]">
+                <span class="font-bold ${isMe ? 'text-indigo-300' : 'text-slate-300'}">${escapeHtml(msg.senderName || 'Student')}</span>
+                ${roleTag}
+                <span class="text-[9px] text-slate-400 font-mono">${formatDate(msg.createdAt)}</span>
+              </div>
+              <div class="max-w-[85%] px-3 py-2 rounded-2xl text-xs break-words shadow-sm ${isMe ? 'bg-gradient-to-r from-indigo-600 to-brand-500 text-white rounded-tr-none' : 'bg-slate-800/90 text-slate-100 rounded-tl-none border border-slate-700/60'}">
+                ${escapeHtml(msg.text)}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+        box.scrollTop = box.scrollHeight;
+      },
+
+      async sendChatMessage() {
+        const input = document.getElementById('chat-text-input');
+        const text = input ? input.value.trim() : '';
+        if (!text) return;
+
+        input.value = '';
+        SoundSystem.bubble();
+
+        try {
+          await HubStore.addChat({
+            text,
+            senderName: this.currentUser.name,
+            senderLower: this.currentUser.nameLower,
+            senderRole: this.currentUser.role
+          });
+        } catch (e) {
+          showToast('Failed to send: ' + e.message, 'error');
+        }
+      },
+
+      // ========================================================
+      // 8. ADMIN CONTROL CENTER (LEADERSHIP ONLY)
+      // ========================================================
+      loadAdminTab() {
+        const container = document.getElementById('tab-container');
+        if (!container) return;
+
+        if (!this.canManage()) {
+          container.innerHTML = `
+            <div class="text-center py-12 glass-card rounded-2xl border border-rose-500/40 text-rose-300">
+              <i data-lucide="shield-alert" class="w-10 h-10 mx-auto mb-2"></i>
+              <h3 class="text-sm font-bold">Access Restricted</h3>
+              <p class="text-xs text-slate-400 mt-1">This panel is only accessible to leadership staff.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+                ADMIN CONTROL CENTER
+              </h2>
+              <p class="text-[10px] text-slate-400">Account Approvals, Roles & Staff Moderation</p>
+            </div>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              ${this.currentUser.role.toUpperCase()} PRIVILEGES
+            </span>
+          </div>
+
+          <!-- PENDING APPROVALS -->
+          <div class="glass-card neon-indigo rounded-2xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i data-lucide="user-check" class="w-4 h-4 text-indigo-400"></i>
+                Pending Account Approvals
+              </h3>
+              <span id="pending-count-badge" class="px-2 py-0.2 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300">0</span>
+            </div>
+            <div id="pending-accounts-list" class="space-y-2 mt-2">
+              <div class="text-center py-3 text-xs text-slate-400">Checking pending requests...</div>
+            </div>
+          </div>
+
+          <!-- ALL ACCOUNTS DIRECTORY -->
+          <div class="glass-card neon-cyan rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+                <i data-lucide="users" class="w-4 h-4 text-cyan-400"></i>
+                All Accounts Directory
+              </h3>
+            </div>
+
+            <div class="mb-3">
+              <input id="admin-search-input" oninput="App.filterAdminAccounts()" type="text" placeholder="Search by name, GC Name, email..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400">
+            </div>
+
+            <div id="all-accounts-list" class="space-y-2">
+              <div class="text-center py-3 text-xs text-slate-400">Loading directory...</div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+
+        const unsub = HubStore.subscribe('accounts', (list) => {
+          this.allAccountsData = list;
+          this.renderAdminLists();
+        });
+        this.unsubs.push(unsub);
+      },
+
+      renderAdminLists() {
+        if (!this.allAccountsData) return;
+
+        // Pending
+        const pending = this.allAccountsData.filter(a => a.status === 'pending');
+        const badge = document.getElementById('pending-count-badge');
+        if (badge) badge.textContent = pending.length;
+
+        const pendingContainer = document.getElementById('pending-accounts-list');
+        if (pendingContainer) {
+          if (pending.length === 0) {
+            pendingContainer.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">✓ No pending approval requests.</div>`;
+          } else {
+            pendingContainer.innerHTML = pending.map(acc => `
+              <div class="p-2.5 rounded-xl bg-[#0b0e27] border border-slate-800 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-white truncate">${escapeHtml(acc.name)}</span>
+                    <span class="text-[9px] font-mono text-cyan-400">@${escapeHtml(acc.nameLower)}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300">${escapeHtml(acc.role)}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5 truncate">
+                    📞 ${escapeHtml(acc.phone)} • ✉️ ${escapeHtml(acc.gmail)}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <button onclick="App.approveAccount('${acc.nameLower}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1">
+                    Approve
+                  </button>
+                  <button onclick="App.rejectAccount('${acc.nameLower}')" class="px-2 py-1 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-[10px]">
+                    Reject
+                  </button>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
+        this.filterAdminAccounts();
+        lucide.createIcons();
+      },
+
+      filterAdminAccounts() {
+        const query = (document.getElementById('admin-search-input')?.value || '').toLowerCase();
+        const container = document.getElementById('all-accounts-list');
+        if (!container || !this.allAccountsData) return;
+
+        let filtered = this.allAccountsData;
+        if (query) {
+          filtered = filtered.filter(a => 
+            (a.name && a.name.toLowerCase().includes(query)) ||
+            (a.nameLower && a.nameLower.includes(query)) ||
+            (a.phone && a.phone.includes(query)) ||
+            (a.gmail && a.gmail.toLowerCase().includes(query))
+          );
+        }
+
+        const isOwnerOrFounder = this.currentUser.role === 'Owner' || this.currentUser.role === 'Co-Founder';
+
+        container.innerHTML = filtered.map(acc => {
+          const isApproved = acc.status === 'approved';
+          const isSelf = acc.nameLower === this.currentUser.nameLower;
+
+          let rolePillColor = 'bg-slate-700 text-slate-300';
+          if (acc.role === 'Owner') rolePillColor = 'bg-yellow-500/20 text-yellow-300';
+          else if (acc.role === 'Co-Founder') rolePillColor = 'bg-cyan-500/20 text-cyan-300';
+          else if (acc.role === 'CEO') rolePillColor = 'bg-indigo-500/20 text-indigo-300';
+          else if (acc.role === 'CTO') rolePillColor = 'bg-purple-500/20 text-purple-300';
+          else if (acc.role === 'Admin') rolePillColor = 'bg-blue-500/20 text-blue-300';
+          else if (acc.role === 'Student') rolePillColor = 'bg-emerald-500/20 text-emerald-300';
+
+          return `
+            <div class="p-2.5 rounded-xl bg-[#0b0e27] border border-slate-800 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-white">${escapeHtml(acc.name)}</span>
+                  <span class="text-[9px] font-mono text-slate-400">@${escapeHtml(acc.nameLower)}</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${rolePillColor}">
+                    ${escapeHtml(acc.role)}
+                  </span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isApproved ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+                    ${escapeHtml(acc.status)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                <span>📞 ${escapeHtml(acc.phone)}</span>
+                <span>✉️ ${escapeHtml(acc.gmail)}</span>
+              </div>
+
+              <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between gap-1">
+                <div class="flex items-center gap-1">
+                  <button onclick="App.adminResetPass('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[9px] font-bold">
+                    Reset Pass
+                  </button>
+                  ${isOwnerOrFounder && !isSelf ? `
+                    <button onclick="App.adminChangeRole('${acc.nameLower}', '${acc.role}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold">
+                      Change Role
+                    </button>
+                  ` : ''}
+                </div>
+
+                ${!isSelf ? `
+                  <button onclick="App.adminDeleteAccount('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
+                    Delete
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      },
+
+      async approveAccount(docId) {
+        SoundSystem.bass();
+        await HubStore.approveAccount(docId, this.currentUser.name);
+        SoundSystem.success();
+        showToast(`Account approved for @${docId}!`, 'success');
+      },
+
+      async rejectAccount(docId) {
+        SoundSystem.bass();
+        await HubStore.rejectAccount(docId);
+        showToast(`Account @${docId} rejected`, 'info');
+      },
+
+      async adminResetPass(docId) {
+        const newPass = prompt(`Enter new password for @${docId} (min 6 characters):`);
+        if (!newPass || newPass.trim().length < 6) {
+          if (newPass) showToast('Password must be at least 6 characters', 'error');
+          return;
+        }
+        await HubStore.updateAccountPassword(docId, newPass.trim());
+        SoundSystem.success();
+        showToast(`Password updated for @${docId}!`, 'success');
+      },
+
+      async adminChangeRole(docId, currentRole) {
+        const newRole = prompt(`Enter new role for @${docId}\nOptions: Owner, Co-Founder, CEO, CTO, Admin, Student:`, currentRole);
+        if (!newRole) return;
+        const validRoles = ['Owner', 'Co-Founder', 'CEO', 'CTO', 'Admin', 'Student'];
+        const matched = validRoles.find(r => r.toLowerCase() === newRole.trim().toLowerCase());
+        if (!matched) {
+          showToast('Invalid role specified', 'error');
+          return;
+        }
+        await HubStore.updateRole(docId, matched);
+        SoundSystem.ding();
+        showToast(`Role updated to ${matched} for @${docId}`, 'success');
+      },
+
+      async adminDeleteAccount(docId) {
+        if (!confirm(`Are you sure you want to delete account @${docId}?`)) return;
+        SoundSystem.bass();
+        await HubStore.rejectAccount(docId);
+        showToast(`Account @${docId} deleted`, 'info');
+      }
+    };
+
+    // BOOTSTRAP APP ON LOAD
+    window.addEventListener('DOMContentLoaded', () => {
+      App.init();
+    });
+  </script>
+</body>
+</html>
