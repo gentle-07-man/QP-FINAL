@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
   <title>QP 2.0 HUB</title>
   <meta name="description" content="QP 2.0 HUB - Premier Education Hub with role-based access, PYQs, Mock Tests, Community Adda, and Official Notices." />
   <meta property="og:title" content="QP 2.0 HUB" />
@@ -61,6 +61,12 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Telegram Bots Configuration -->
+  <script type="module">
+    import { TELEGRAM_BOTS } from '/src/config/telegramBots.js';
+    window.TELEGRAM_BOTS = TELEGRAM_BOTS;
+  </script>
 
   <style>
     /* Custom Scrollbar */
@@ -327,6 +333,7 @@
     const firebaseConfig = {
       apiKey: "AIzaSyCO6ah6cTQ3mEC99WsY48vGthSeuMTg6ao",
       authDomain: "qp-2-0-hub-09012011.firebaseapp.com",
+      databaseURL: "https://qp-2-0-hub-09012011-default-rtdb.firebaseio.com",
       projectId: "qp-2-0-hub-09012011",
       storageBucket: "qp-2-0-hub-09012011.firebasestorage.app",
       messagingSenderId: "121603897628",
@@ -358,6 +365,21 @@
 
     const db = firebase.firestore();
     const auth = firebase.auth();
+
+    // 1. PERSISTENT LOGIN: Set Firebase auth persistence to browser local persistence
+    try {
+      if (auth && auth.setPersistence && firebase.auth.Auth && firebase.auth.Auth.Persistence) {
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+          .then(() => {
+            console.log("Firebase Auth persistence set to LOCAL");
+          })
+          .catch((err) => {
+            console.warn("Auth setPersistence warning:", err);
+          });
+      }
+    } catch (e) {
+      console.warn("Auth persistence initialization warning:", e);
+    }
 
     // DESIGNATED LEADERSHIP ROLES (Fixed role mapping to prevent bug)
     const LEADERSHIP_ACCOUNTS = {
@@ -406,8 +428,11 @@
     // ROLE ACCESS KEYS (Only valid keys can elevate role)
     const ROLE_KEYS = {
       'QP2.0OWNER@2026': 'Owner',
+      'QP2.0HUBOWNER@2026': 'Owner',
       'QP2.0ADMIN@2026': 'Admin',
-      'STUDENT@2026': 'Student'
+      'QP2.0HUBADMIN@2026': 'Admin',
+      'STUDENT@2026': 'Student',
+      'MEMBER@2026': 'Student'
     };
 
     // SOUND SYSTEM (Web Audio API only, no external audio files)
@@ -678,8 +703,82 @@
     }
 
     // ========================================================
+    // INDEXEDDB BACKUP STORE FOR CHATS (NEVER DISAPPEAR)
+    // ========================================================
+    const ChatDB = {
+      dbName: 'qp_chats_database',
+      storeName: 'qp_messages_store',
+      db: null,
+
+      async init() {
+        if (this.db) return this.db;
+        return new Promise((resolve) => {
+          try {
+            if (typeof indexedDB === 'undefined') return resolve(null);
+            const req = indexedDB.open(this.dbName, 1);
+            req.onupgradeneeded = (e) => {
+              const d = e.target.result;
+              if (!d.objectStoreNames.contains(this.storeName)) {
+                d.createObjectStore(this.storeName, { keyPath: 'id' });
+              }
+            };
+            req.onsuccess = (e) => {
+              this.db = e.target.result;
+              resolve(this.db);
+            };
+            req.onerror = () => resolve(null);
+          } catch (e) {
+            resolve(null);
+          }
+        });
+      },
+
+      async saveChats(chats) {
+        try {
+          const d = await this.init();
+          if (!d) return;
+          const tx = d.transaction(this.storeName, 'readwrite');
+          const store = tx.objectStore(this.storeName);
+          store.clear();
+          if (Array.isArray(chats)) {
+            chats.forEach(c => {
+              if (c && c.id) store.put(c);
+            });
+          }
+        } catch (e) {
+          console.warn("ChatDB save warning:", e);
+        }
+      },
+
+      async getAllChats() {
+        try {
+          const d = await this.init();
+          if (!d) return [];
+          return new Promise((resolve) => {
+            const tx = d.transaction(this.storeName, 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => resolve([]);
+          });
+        } catch (e) {
+          return [];
+        }
+      },
+
+      async clear() {
+        try {
+          const d = await this.init();
+          if (!d) return;
+          const tx = d.transaction(this.storeName, 'readwrite');
+          tx.objectStore(this.storeName).clear();
+        } catch (e) {}
+      }
+    };
+
+    // ========================================================
     // RESILIENT PUBLIC SYNC & FIRESTORE DATA BRIDGE
-    // Clean, empty database with persistent login
+    // Clean, empty database with persistent login & persistent chats
     // ========================================================
     const HubStore = {
       firestoreAvailable: false,
@@ -704,8 +803,30 @@
       init() {
         // Pre-populate core leadership accounts so Haider, Aritra, Ranbir, and Gentleman can log in
         Object.values(LEADERSHIP_ACCOUNTS).forEach(acc => {
-          this.accounts.set(acc.nameLower, { ...acc });
+          this.accounts.set(acc.nameLower, { ...acc, isBanned: false });
         });
+
+        // 1. CHAT PERSISTENCE: Instantly load cached chats from localStorage
+        try {
+          const cachedChats = localStorage.getItem('qp_chats');
+          if (cachedChats) {
+            const parsed = JSON.parse(cachedChats);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              this.chats = parsed;
+            }
+          }
+        } catch (e) {
+          console.warn("Error reading qp_chats from localStorage:", e);
+        }
+
+        // 2. CHAT PERSISTENCE: Check IndexedDB backup if localStorage was cleared
+        ChatDB.getAllChats().then(idbChats => {
+          if ((!this.chats || this.chats.length === 0) && Array.isArray(idbChats) && idbChats.length > 0) {
+            this.chats = idbChats;
+            try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+            this.notify('chats');
+          }
+        }).catch(() => {});
 
         try {
           if (typeof BroadcastChannel !== 'undefined') {
@@ -745,38 +866,221 @@
               } else if (type === 'CHAT_ADD') {
                 if (!this.chats.some(c => c.id === payload.id)) {
                   this.chats.push(payload);
-                  if (this.chats.length > 60) this.chats.shift();
+                  try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+                  ChatDB.saveChats(this.chats);
                   this.notify('chats', true);
+                }
+              } else if (type === 'CHAT_DELETE') {
+                this.chats = this.chats.filter(c => c.id !== payload);
+                try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+                ChatDB.saveChats(this.chats);
+                this.notify('chats');
+              } else if (type === 'CHATS_PURGED') {
+                this.chats = [];
+                try { localStorage.removeItem('qp_chats'); } catch(e) {}
+                ChatDB.clear();
+                this.notify('chats');
+              } else if (type === 'USER_BANNED') {
+                const acc = this.accounts.get(payload.nameLower);
+                if (acc) {
+                  acc.isBanned = true;
+                  this.accounts.set(payload.nameLower, acc);
+                }
+                this.notify('accounts');
+                if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === payload.nameLower) {
+                  App.currentUser.isBanned = true;
+                  localStorage.removeItem('qp_session');
+                  App.renderBannedScreen();
+                }
+              } else if (type === 'USER_UNBANNED') {
+                const acc = this.accounts.get(payload.nameLower);
+                if (acc) {
+                  acc.isBanned = false;
+                  this.accounts.set(payload.nameLower, acc);
+                }
+                this.notify('accounts');
+              } else if (type === 'ROLE_UPDATED') {
+                const acc = this.accounts.get(payload.nameLower);
+                if (acc) {
+                  acc.role = payload.role;
+                  this.accounts.set(payload.nameLower, acc);
+                }
+                this.notify('accounts');
+                if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === payload.nameLower) {
+                  App.currentUser.role = payload.role;
                 }
               }
             };
           }
         } catch (e) {}
 
-        // Check if user session exists in memory / storage
+        // Check if user session exists in localStorage (qp_token & qp_user)
         this.restorePersistentSession();
+
+        // Real-time Firestore chats listener ordered by timestamp ascending
+        this.initChatsListener();
+
+        // Real-time Firestore users listener to keep roles and bans synchronized
+        this.initUsersListener();
+      },
+
+      initChatsListener() {
+        if (!db) return;
+        try {
+          const handleSnapshot = (snapshot) => {
+            if (!snapshot) return;
+            const msgs = [];
+            snapshot.forEach(doc => {
+              const d = doc.data();
+              msgs.push({
+                id: doc.id,
+                gcName: d.gcName || d.senderName || 'Student',
+                message: d.message || d.text || '',
+                timestamp: d.timestamp,
+                senderRole: d.senderRole || d.role || 'Student',
+                senderLower: (d.gcName || d.senderName || '').toLowerCase(),
+                createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
+              });
+            });
+
+            if (msgs.length > 0) {
+              this.chats = msgs;
+              // Save to localStorage immediately
+              try {
+                localStorage.setItem('qp_chats', JSON.stringify(this.chats));
+              } catch (e) {}
+              // Save to IndexedDB backup
+              ChatDB.saveChats(this.chats);
+              this.notify('chats', true);
+            }
+          };
+
+          // 1. Listen to 'qp_messages' collection
+          db.collection('qp_messages')
+            .orderBy('timestamp', 'asc')
+            .onSnapshot(handleSnapshot, (err) => {
+              console.warn("qp_messages onSnapshot note:", err.message);
+              // Fallback to 'chats' collection if qp_messages has any indexing delay
+              db.collection('chats')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot(handleSnapshot, (e2) => console.warn("chats onSnapshot note:", e2.message));
+            });
+        } catch (e) {
+          console.warn("Firestore onSnapshot setup notice:", e);
+        }
+      },
+
+      initUsersListener() {
+        if (!db) return;
+        try {
+          db.collection('qp_users').onSnapshot((snapshot) => {
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              const id = doc.id.toLowerCase();
+              let acc = this.accounts.get(id);
+              if (acc) {
+                acc.isBanned = data.isBanned === true;
+                if (data.role) acc.role = data.role === 'owner' ? 'Owner' : (data.role === 'admin' ? 'Admin' : acc.role);
+                this.accounts.set(id, acc);
+              } else {
+                this.accounts.set(id, {
+                  name: data.gcName || id,
+                  nameLower: id,
+                  role: data.role === 'owner' ? 'Owner' : (data.role === 'admin' ? 'Admin' : 'Student'),
+                  isBanned: data.isBanned === true,
+                  status: 'approved'
+                });
+              }
+
+              // If current user became banned, immediately kick them out!
+              if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === id) {
+                if (data.isBanned === true) {
+                  App.currentUser.isBanned = true;
+                  localStorage.removeItem('qp_session');
+                  App.renderBannedScreen();
+                }
+              }
+            });
+            this.notify('accounts');
+          }, (err) => {
+            console.warn("qp_users listener notice:", err.message);
+          });
+        } catch (e) {}
       },
 
       restorePersistentSession() {
         try {
-          const savedUser = sessionStorage.getItem('qp2_session_user');
-          if (savedUser) {
-            const parsed = JSON.parse(savedUser);
-            if (parsed && parsed.nameLower) {
-              const fresh = this.accounts.get(parsed.nameLower) || parsed;
-              App.currentUser = fresh;
+          // 1. Check primary qp_session key { gcName, role, isLoggedIn, loginAt }
+          const sessionStr = localStorage.getItem('qp_session');
+          if (sessionStr) {
+            const sess = JSON.parse(sessionStr);
+            if (sess && (sess.isLoggedIn || sess.gcName || sess.name)) {
+              const gcName = sess.gcName || sess.name || 'Student';
+              const nameLower = gcName.toLowerCase().trim();
+              const role = sess.role || (LEADERSHIP_ACCOUNTS[nameLower] ? LEADERSHIP_ACCOUNTS[nameLower].role : 'Student');
+              
+              const existingAcc = (nameLower && this.accounts.get(nameLower)) || (LEADERSHIP_ACCOUNTS[nameLower] ? { ...LEADERSHIP_ACCOUNTS[nameLower] } : null);
+              const restoredUser = existingAcc ? { ...existingAcc, role: role } : {
+                name: gcName,
+                nameLower: nameLower,
+                role: role,
+                status: 'approved',
+                phone: sess.phone || '',
+                gmail: sess.gmail || '',
+                xp: sess.xp || 150
+              };
+              App.currentUser = restoredUser;
+              return true;
             }
+          }
+
+          // 2. Check fallback qp_token & qp_user
+          const token = localStorage.getItem('qp_token');
+          const savedUser = localStorage.getItem('qp_user');
+          if (token && savedUser) {
+            const parsed = JSON.parse(savedUser);
+            if (parsed && (parsed.nameLower || parsed.name || parsed.phone || parsed.gmail)) {
+              const fresh = (parsed.nameLower && this.accounts.get(parsed.nameLower)) || parsed;
+              App.currentUser = fresh;
+              return true;
+            }
+          }
+        } catch (e) {
+          console.warn("Error restoring session:", e);
+        }
+        return false;
+      },
+
+      persistSession(user, token) {
+        try {
+          if (user) {
+            const sessionData = {
+              gcName: user.name,
+              role: user.role,
+              isLoggedIn: true,
+              loginAt: Date.now()
+            };
+            localStorage.setItem('qp_session', JSON.stringify(sessionData));
+            localStorage.setItem('qp_user', JSON.stringify(user));
+            if (token) {
+              localStorage.setItem('qp_token', token);
+            } else if (!localStorage.getItem('qp_token')) {
+              localStorage.setItem('qp_token', 'qp_token_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8));
+            }
+          } else {
+            localStorage.removeItem('qp_session');
+            localStorage.removeItem('qp_user');
+            localStorage.removeItem('qp_token');
           }
         } catch (e) {}
       },
 
-      persistSession(user) {
+      clearSession() {
         try {
-          if (user) {
-            sessionStorage.setItem('qp2_session_user', JSON.stringify(user));
-          } else {
-            sessionStorage.removeItem('qp2_session_user');
-          }
+          localStorage.removeItem('qp_session');
+          localStorage.removeItem('qp_user');
+          localStorage.removeItem('qp_token');
+          localStorage.clear();
         } catch (e) {}
       },
 
@@ -988,19 +1292,230 @@
         if (this.channel) this.channel.postMessage({ type: 'MOCK_DELETE', payload: id });
       },
 
-      // CHATS
+      // CHATS - Public Firestore collection 'qp_messages' + 'chats' + localStorage 'qp_chats' + IndexedDB backup
       async addChat(item) {
-        const full = {
-          id: 'chat_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-          ...item,
+        const localId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        const gcName = item.gcName || (App.currentUser ? App.currentUser.name : 'Student');
+        const role = item.senderRole || (App.currentUser ? App.currentUser.role : 'Student');
+        const text = item.message || item.text || '';
+
+        const payload = {
+          id: localId,
+          gcName: gcName,
+          message: text,
+          senderRole: role,
+          senderLower: gcName.toLowerCase(),
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt: new Date().toISOString()
+        };
+
+        const localMsg = {
+          ...payload,
           createdAt: new Date()
         };
-        this.chats.push(full);
-        if (this.chats.length > 60) this.chats.shift();
-        this.notify('chats', true);
-        if (this.channel) this.channel.postMessage({ type: 'CHAT_ADD', payload: full });
-        if (db && this.firestoreAvailable) db.collection('chats').add(full).catch(() => {});
-        return full;
+
+        // 1. Immediately store in local chats array
+        if (!this.chats.some(c => c.id === localMsg.id)) {
+          this.chats.push(localMsg);
+          this.notify('chats', true);
+        }
+
+        // 2. Immediately write to localStorage 'qp_chats'
+        try {
+          localStorage.setItem('qp_chats', JSON.stringify(this.chats));
+        } catch (e) {}
+
+        // 3. Immediately write to IndexedDB backup
+        ChatDB.saveChats(this.chats);
+
+        // 4. Send to Firestore collections 'qp_messages' and 'chats'
+        if (db) {
+          try {
+            db.collection('qp_messages').doc(localId).set(payload).catch(e => console.warn(e));
+            db.collection('chats').doc(localId).set(payload).catch(e => console.warn(e));
+          } catch (e) {
+            console.warn("Firestore chats add notice:", e.message);
+          }
+        }
+
+        if (this.channel) this.channel.postMessage({ type: 'CHAT_ADD', payload: localMsg });
+        return localMsg;
+      },
+
+      // Delete message from Firestore + localStorage + IndexedDB for everyone
+      async deleteChat(msgId) {
+        this.chats = this.chats.filter(c => c.id !== msgId);
+        try {
+          localStorage.setItem('qp_chats', JSON.stringify(this.chats));
+        } catch (e) {}
+        ChatDB.saveChats(this.chats);
+        this.notify('chats');
+
+        if (this.channel) {
+          this.channel.postMessage({ type: 'CHAT_DELETE', payload: msgId });
+        }
+
+        if (db) {
+          try {
+            db.collection('qp_messages').doc(msgId).delete().catch(() => {});
+            db.collection('chats').doc(msgId).delete().catch(() => {});
+          } catch (e) {}
+        }
+      },
+
+      // Purge all chats: delete all docs in 'qp_messages' & 'chats' + clear localStorage 'qp_chats'
+      async purgeChats() {
+        this.chats = [];
+        try {
+          localStorage.removeItem('qp_chats');
+        } catch (e) {}
+        ChatDB.clear();
+        this.notify('chats');
+
+        if (this.channel) {
+          this.channel.postMessage({ type: 'CHATS_PURGED' });
+        }
+
+        if (db) {
+          try {
+            const snap1 = await db.collection('qp_messages').get();
+            const b1 = db.batch();
+            snap1.forEach(doc => b1.delete(doc.ref));
+            await b1.commit();
+
+            const snap2 = await db.collection('chats').get();
+            const b2 = db.batch();
+            snap2.forEach(doc => b2.delete(doc.ref));
+            await b2.commit();
+          } catch (e) {
+            console.warn("Purge firestore error:", e);
+          }
+        }
+      },
+
+      // BAN USER SYSTEM: Firestore 'qp_users' + local accounts
+      async banUser(gcName, bannedBy = 'Admin') {
+        const nameLower = (gcName || '').toLowerCase().trim();
+        let acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.isBanned = true;
+          acc.bannedAt = new Date().toISOString();
+          acc.bannedBy = bannedBy;
+          this.accounts.set(nameLower, acc);
+        } else {
+          acc = {
+            name: gcName,
+            nameLower: nameLower,
+            role: 'Student',
+            isBanned: true,
+            bannedAt: new Date().toISOString(),
+            bannedBy: bannedBy
+          };
+          this.accounts.set(nameLower, acc);
+        }
+        this.notify('accounts');
+
+        // Firestore collection 'qp_users'
+        if (db) {
+          try {
+            await db.collection('qp_users').doc(nameLower).set({
+              gcName: gcName,
+              nameLower: nameLower,
+              role: ((acc && acc.role) || 'Student').toLowerCase(),
+              isBanned: true,
+              bannedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              bannedBy: bannedBy
+            }, { merge: true });
+          } catch (e) {
+            console.warn("Firestore qp_users ban notice:", e);
+          }
+        }
+
+        if (this.channel) {
+          this.channel.postMessage({ type: 'USER_BANNED', payload: { nameLower } });
+        }
+
+        // If current user is banned, immediately kick them out
+        if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === nameLower) {
+          App.currentUser.isBanned = true;
+          localStorage.removeItem('qp_session');
+          App.renderBannedScreen();
+        }
+      },
+
+      async unbanUser(nameLower) {
+        nameLower = (nameLower || '').toLowerCase().trim();
+        const acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.isBanned = false;
+          delete acc.bannedAt;
+          delete acc.bannedBy;
+          this.accounts.set(nameLower, acc);
+          this.notify('accounts');
+        }
+
+        if (db) {
+          try {
+            await db.collection('qp_users').doc(nameLower).set({
+              isBanned: false,
+              unbannedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch (e) {
+            console.warn("Firestore unban notice:", e);
+          }
+        }
+
+        if (this.channel) {
+          this.channel.postMessage({ type: 'USER_UNBANNED', payload: { nameLower } });
+        }
+      },
+
+      async makeAdmin(gcName) {
+        const nameLower = (gcName || '').toLowerCase().trim();
+        let acc = this.accounts.get(nameLower);
+        if (acc) {
+          acc.role = 'Admin';
+          this.accounts.set(nameLower, acc);
+        } else {
+          acc = { name: gcName, nameLower: nameLower, role: 'Admin', isBanned: false };
+          this.accounts.set(nameLower, acc);
+        }
+        this.notify('accounts');
+
+        if (db) {
+          try {
+            await db.collection('qp_users').doc(nameLower).set({
+              gcName: gcName,
+              nameLower: nameLower,
+              role: 'admin',
+              promotedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+          } catch (e) {
+            console.warn("Firestore makeAdmin notice:", e);
+          }
+        }
+
+        if (this.channel) {
+          this.channel.postMessage({ type: 'ROLE_UPDATED', payload: { nameLower, role: 'Admin' } });
+        }
+      },
+
+      async checkIsUserBanned(nameLower) {
+        if (!nameLower) return false;
+        nameLower = nameLower.toLowerCase().trim();
+        const local = this.accounts.get(nameLower);
+        if (local && local.isBanned === true) return true;
+
+        if (db) {
+          try {
+            const doc = await db.collection('qp_users').doc(nameLower).get();
+            if (doc.exists && doc.data().isBanned === true) {
+              if (local) local.isBanned = true;
+              return true;
+            }
+          } catch (e) {}
+        }
+        return false;
       }
     };
 
@@ -1016,6 +1531,7 @@
       currentDashboardTab: 'pyqs', // 'pyqs' | 'notices' | 'mocks' | 'chats' | 'admin'
       splashTimer: null,
       unsubs: [],
+      isInDashboard: false,
 
       // Registration state
       regState: {
@@ -1030,27 +1546,212 @@
       // Permission Helper: Owner, Co-Founder, CEO, CTO, Admin can ADD, EDIT, DELETE
       canManage() {
         if (!this.currentUser) return false;
-        const role = this.currentUser.role;
-        return ['Owner', 'Co-Founder', 'CEO', 'CTO', 'Admin'].includes(role);
+        const role = (this.currentUser.role || '').toLowerCase();
+        return ['owner', 'co-founder', 'ceo', 'cto', 'admin'].includes(role);
       },
 
-      init() {
+      // Security check: const isAdmin = currentUser.role === 'owner' || currentUser.role === 'admin'
+      isAdminUser() {
+        if (!this.currentUser) return false;
+        const role = (this.currentUser.role || '').toLowerCase();
+        return role === 'owner' || role === 'admin' || role === 'co-founder' || role === 'ceo' || role === 'cto';
+      },
+
+      isOwnerUser() {
+        if (!this.currentUser) return false;
+        const role = (this.currentUser.role || '').toLowerCase();
+        return role === 'owner';
+      },
+
+      initAutoPurgeChecker() {
+        const runCheck = () => {
+          try {
+            const isAutoPurgeOn = localStorage.getItem('qp_autopurge') === 'true';
+            if (!isAutoPurgeOn) return;
+
+            // Check current time in IST (Asia/Kolkata)
+            const nowIST = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+            const hours = nowIST.getHours();
+            const dateKey = nowIST.toDateString();
+
+            const lastPurged = localStorage.getItem('qp_last_autopurge_date');
+            if (hours === 0 && lastPurged !== dateKey) {
+              localStorage.setItem('qp_last_autopurge_date', dateKey);
+              HubStore.purgeChats();
+              showToast("Auto-Purge Daily: All chats cleared for 12 AM IST", "info", 5000);
+            }
+          } catch (e) {
+            console.warn("Auto purge check error:", e);
+          }
+        };
+
+        runCheck();
+        if (this.autoPurgeInterval) clearInterval(this.autoPurgeInterval);
+        this.autoPurgeInterval = setInterval(runCheck, 60000);
+      },
+
+      // BANNED USER SCREEN
+      renderBannedScreen() {
+        this.isInDashboard = false;
+        if (this.splashTimer) clearTimeout(this.splashTimer);
+
+        const main = document.getElementById('main-content');
+        const header = document.getElementById('main-header');
+        const ticker = document.getElementById('dashboard-ticker');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        if (header) header.classList.add('hidden');
+        if (ticker) ticker.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+
+        const name = (this.currentUser && this.currentUser.name) || 'User';
+
+        main.innerHTML = `
+          <div class="flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 min-h-[500px]">
+            <div class="w-20 h-20 rounded-full bg-rose-500/20 border-2 border-rose-500/50 flex items-center justify-center text-rose-400 mb-2 shadow-[0_0_25px_rgba(244,63,94,0.4)]">
+              <i data-lucide="shield-alert" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-2xl font-black text-rose-300 font-display tracking-tight">You are banned by Admin</h2>
+            <p class="text-xs text-slate-300 font-medium max-w-xs">
+              Your account <span class="font-bold text-white font-mono bg-rose-950/80 px-2 py-0.5 rounded border border-rose-500/40">@${escapeHtml(name)}</span> has been banned from QP 2.0 HUB by an Administrator.
+            </p>
+            <div class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] text-slate-400 max-w-xs space-y-1">
+              <p>• Access to Community Adda, Mock tests, and Dashboard is restricted.</p>
+              <p>• Please contact the Owner (<span class="text-amber-300 font-bold">@haider</span>) to review this action.</p>
+            </div>
+            <button onclick="App.logout()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs flex items-center gap-2 border border-slate-700 shadow-lg cursor-pointer active:scale-95 transition-all">
+              <i data-lucide="log-out" class="w-4 h-4 text-rose-400"></i>
+              <span>Logout / Switch Account</span>
+            </button>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async init() {
         const soundBtn = document.getElementById('sound-toggle-btn');
         if (soundBtn) soundBtn.onclick = () => SoundSystem.toggle();
 
-        // Check if already authenticated via persistent session
-        if (this.currentUser) {
-          this.renderDashboard();
-        } else {
-          // Render SPLASH SCREEN FIRST
-          this.renderSplashScreen();
+        // Start 12 AM IST Auto-Purge scheduler
+        this.initAutoPurgeChecker();
+
+        // 1. Firebase onAuthStateChanged listener for persistent Google/Phone login
+        if (auth && typeof auth.onAuthStateChanged === 'function') {
+          auth.onAuthStateChanged(async (user) => {
+            if (user) {
+              const email = user.email || '';
+              const displayName = user.displayName || (user.phoneNumber ? 'Student_' + user.phoneNumber.slice(-4) : (email ? email.split('@')[0] : 'Student'));
+              const nameLower = displayName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+              // Check if banned
+              const isBanned = await HubStore.checkIsUserBanned(nameLower);
+              if (isBanned) {
+                this.currentUser = { name: displayName, nameLower: nameLower, role: 'Student', isBanned: true };
+                localStorage.removeItem('qp_session');
+                this.renderBannedScreen();
+                return;
+              }
+
+              let role = 'Student';
+              if (nameLower === 'haider' || email.toLowerCase().includes('haider')) role = 'Owner';
+              else if (nameLower === 'aritra' || email.toLowerCase().includes('aritra')) role = 'Co-Founder';
+              else if (nameLower === 'ranbir' || email.toLowerCase().includes('ranbir')) role = 'CEO';
+              else if (nameLower === 'gentleman' || email.toLowerCase().includes('gentleman')) role = 'CTO';
+
+              const userData = {
+                name: displayName,
+                nameLower: nameLower,
+                role: role,
+                status: 'approved',
+                isBanned: false,
+                phone: user.phoneNumber || '',
+                gmail: email,
+                xp: 150,
+                authProvider: user.providerData?.[0]?.providerId || 'firebase'
+              };
+
+              const sessionData = {
+                gcName: displayName,
+                role: role,
+                isLoggedIn: true,
+                loginAt: Date.now()
+              };
+              localStorage.setItem('qp_session', JSON.stringify(sessionData));
+              localStorage.setItem('qp_user', JSON.stringify(userData));
+              if (!localStorage.getItem('qp_token')) {
+                localStorage.setItem('qp_token', 'qp_token_' + Date.now());
+              }
+
+              this.currentUser = userData;
+              HubStore.saveAccount(nameLower, userData);
+
+              // If already logged in, SKIP splash and go directly to dashboard
+              if (!this.isInDashboard) {
+                if (this.splashTimer) clearTimeout(this.splashTimer);
+                this.renderDashboard();
+              }
+            }
+          });
         }
+
+        // 2. On app startup: Check Firebase currentUser OR localStorage 'qp_session'
+        const hasSession = HubStore.restorePersistentSession();
+        if (hasSession && this.currentUser) {
+          const isBanned = await HubStore.checkIsUserBanned(this.currentUser.nameLower);
+          if (isBanned || this.currentUser.isBanned) {
+            this.currentUser.isBanned = true;
+            localStorage.removeItem('qp_session');
+            this.renderBannedScreen();
+            return;
+          }
+          this.renderDashboard();
+          return;
+        }
+
+        // Check if Firebase auth already has currentUser synchronously
+        if (auth && auth.currentUser) {
+          const u = auth.currentUser;
+          const displayName = u.displayName || u.email || 'Student';
+          const nameLower = displayName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+          const isBanned = await HubStore.checkIsUserBanned(nameLower);
+          if (isBanned) {
+            this.currentUser = { name: displayName, nameLower: nameLower, role: 'Student', isBanned: true };
+            localStorage.removeItem('qp_session');
+            this.renderBannedScreen();
+            return;
+          }
+
+          let role = 'Student';
+          if (nameLower === 'haider') role = 'Owner';
+          else if (nameLower === 'aritra') role = 'Co-Founder';
+          else if (nameLower === 'ranbir') role = 'CEO';
+          else if (nameLower === 'gentleman') role = 'CTO';
+
+          this.currentUser = {
+            name: displayName,
+            nameLower: nameLower,
+            role: role,
+            status: 'approved',
+            isBanned: false,
+            phone: u.phoneNumber || '',
+            gmail: u.email || '',
+            xp: 150
+          };
+          this.renderDashboard();
+          return;
+        }
+
+        // If none -> Show Splash (5 sec logo + infinite leadership) -> Then Login Hub
+        this.renderSplashScreen();
       },
 
       // ========================================================
-      // 1. NEW SPLASH SCREEN
+      // 1. SPLASH SCREEN 1: 5 SEC LOGO SCREEN
       // ========================================================
       renderSplashScreen() {
+        if (this.isInDashboard) return;
+
         const main = document.getElementById('main-content');
         const header = document.getElementById('main-header');
         const ticker = document.getElementById('dashboard-ticker');
@@ -1061,9 +1762,9 @@
         if (bottomNav) bottomNav.classList.add('hidden');
 
         main.innerHTML = `
-          <div class="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 relative">
+          <div class="flex-1 flex flex-col items-center justify-center text-center px-4 py-8 relative min-h-[520px]">
             <!-- Skip Button -->
-            <button onclick="App.skipSplash()" class="absolute top-2 right-2 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/60 transition-all flex items-center gap-1 shadow-lg">
+            <button onclick="App.skipSplash()" class="absolute top-2 right-2 px-3 py-1.5 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/60 transition-all flex items-center gap-1 shadow-lg cursor-pointer">
               <span>SKIP</span>
               <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </button>
@@ -1083,55 +1784,160 @@
               Official Education Platform
             </p>
 
-            <!-- Team Credits Box -->
-            <div class="w-full max-w-[320px] glass-card neon-indigo rounded-2xl p-4 mb-8 space-y-2.5 text-left shadow-2xl">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
-                <span class="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">LEADERSHIP TEAM</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              </div>
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium">OWNER</span>
-                <span class="font-extrabold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">HAIDER</span>
-              </div>
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium">CO-FOUNDER</span>
-                <span class="font-extrabold text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">ARITRA</span>
-              </div>
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium">CEO</span>
-                <span class="font-extrabold text-indigo-300 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/30">RANBIR</span>
-              </div>
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium">C.T.O</span>
-                <span class="font-extrabold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/30">GENTLEMAN</span>
-              </div>
+            <!-- 5s Countdown Progress Bar -->
+            <div class="w-full max-w-[220px] bg-slate-800/80 rounded-full h-1.5 overflow-hidden mb-2">
+              <div id="splash-progress" class="bg-gradient-to-r from-indigo-500 via-cyan-400 to-indigo-500 h-full w-0 transition-all duration-[5000ms] ease-linear"></div>
             </div>
-
-            <!-- 3s Countdown Progress Bar -->
-            <div class="w-full max-w-[200px] bg-slate-800/80 rounded-full h-1.5 overflow-hidden mb-2">
-              <div id="splash-progress" class="bg-gradient-to-r from-indigo-500 to-cyan-400 h-full w-0 transition-all duration-3000 ease-linear"></div>
-            </div>
-            <p class="text-[10px] text-slate-400 font-mono">Entering Hub in 3 seconds...</p>
+            <p class="text-[10px] text-slate-400 font-mono">Entering QP 2.0 Hub in 5 seconds...</p>
           </div>
         `;
         lucide.createIcons();
 
-        // Animate progress bar
+        // Animate progress bar across 5 seconds
         setTimeout(() => {
           const bar = document.getElementById('splash-progress');
           if (bar) bar.style.width = '100%';
         }, 50);
 
-        // Auto redirect to Login after 3 seconds
+        // Auto transition to Splash Screen 2 (Leadership Showcase) after 5 seconds
         if (this.splashTimer) clearTimeout(this.splashTimer);
         this.splashTimer = setTimeout(() => {
-          this.skipSplash();
-        }, 3200);
+          this.renderLeadershipSplash();
+        }, 5000);
+      },
+
+      // ========================================================
+      // SPLASH SCREEN 2: INFINITE LEADERSHIP PREVIEW
+      // (Stays until user clicks Enter Login Hub or Skip)
+      // ========================================================
+      renderLeadershipSplash() {
+        if (this.isInDashboard) return;
+        if (this.splashTimer) clearTimeout(this.splashTimer);
+
+        const main = document.getElementById('main-content');
+        const header = document.getElementById('main-header');
+        const ticker = document.getElementById('dashboard-ticker');
+        const bottomNav = document.getElementById('bottom-nav');
+
+        if (header) header.classList.add('hidden');
+        if (ticker) ticker.classList.add('hidden');
+        if (bottomNav) bottomNav.classList.add('hidden');
+
+        main.innerHTML = `
+          <div class="flex-1 flex flex-col justify-between px-2 py-5 relative">
+            <!-- Header Skip Button -->
+            <div class="flex items-center justify-between px-1 mb-3">
+              <div class="flex items-center gap-2">
+                <img src="/logo.png" alt="QP Logo" class="w-7 h-7 rounded-full object-contain drop-shadow-[0_0_8px_rgba(79,70,229,0.5)]">
+                <span class="text-xs font-black shimmer-gold font-display tracking-wider">QP 2.0 HUB</span>
+              </div>
+              <button onclick="App.renderAuthView()" class="px-3 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/60 transition-all flex items-center gap-1 shadow-md cursor-pointer">
+                <span>SKIP TO LOGIN</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Leadership Team Showcase -->
+            <div class="space-y-2.5">
+              <div class="text-center mb-1">
+                <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-[10px] font-bold tracking-widest uppercase mb-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Official Leadership Council
+                </div>
+                <h2 class="text-base font-black shimmer-gold font-display">HONORED ARCHITECTS</h2>
+                <p class="text-[10px] text-slate-400">Pioneering West Bengal's Premier Student Community</p>
+              </div>
+
+              <!-- Haider: Owner -->
+              <div class="glass-card rounded-2xl p-3 border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-slate-900/60 to-[#0c0f28]/80 shadow-[0_0_20px_rgba(245,158,11,0.15)] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 p-0.5 shadow-lg flex-shrink-0">
+                  <div class="w-full h-full bg-[#0c0f28] rounded-[10px] flex items-center justify-center text-amber-300 font-black text-base">
+                    👑
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-0.5">
+                    <h3 class="text-sm font-extrabold text-amber-300 tracking-wide">HAIDER</h3>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/50 uppercase">OWNER</span>
+                  </div>
+                  <p class="text-[10px] text-slate-300 font-medium truncate">QP Founder & Supreme Authority</p>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Full ecosystem direction & policy control</p>
+                </div>
+              </div>
+
+              <!-- Aritra: Co-Founder -->
+              <div class="glass-card rounded-2xl p-3 border border-cyan-500/40 bg-gradient-to-r from-cyan-950/30 via-slate-900/60 to-[#0c0f28]/80 shadow-[0_0_20px_rgba(6,182,212,0.15)] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-400 p-0.5 shadow-lg flex-shrink-0">
+                  <div class="w-full h-full bg-[#0c0f28] rounded-[10px] flex items-center justify-center text-cyan-300 font-black text-base">
+                    ⚡
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-0.5">
+                    <h3 class="text-sm font-extrabold text-cyan-300 tracking-wide">ARITRA</h3>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 uppercase">CO-FOUNDER</span>
+                  </div>
+                  <p class="text-[10px] text-slate-300 font-medium truncate">Operations & Community Head</p>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Strategic student growth & partnerships</p>
+                </div>
+              </div>
+
+              <!-- Ranbir: CEO -->
+              <div class="glass-card rounded-2xl p-3 border border-indigo-500/40 bg-gradient-to-r from-indigo-950/30 via-slate-900/60 to-[#0c0f28]/80 shadow-[0_0_20px_rgba(99,102,241,0.15)] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-400 p-0.5 shadow-lg flex-shrink-0">
+                  <div class="w-full h-full bg-[#0c0f28] rounded-[10px] flex items-center justify-center text-indigo-300 font-black text-base">
+                    🎯
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-0.5">
+                    <h3 class="text-sm font-extrabold text-indigo-300 tracking-wide">RANBIR</h3>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 uppercase">CEO</span>
+                  </div>
+                  <p class="text-[10px] text-slate-300 font-medium truncate">Academic Strategy & Execution</p>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Curriculum alignment & mock curation</p>
+                </div>
+              </div>
+
+              <!-- Gentleman: CTO -->
+              <div class="glass-card rounded-2xl p-3 border border-purple-500/40 bg-gradient-to-r from-purple-950/30 via-slate-900/60 to-[#0c0f28]/80 shadow-[0_0_20px_rgba(168,85,247,0.15)] flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-400 p-0.5 shadow-lg flex-shrink-0">
+                  <div class="w-full h-full bg-[#0c0f28] rounded-[10px] flex items-center justify-center text-purple-300 font-black text-base">
+                    🛡️
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between mb-0.5">
+                    <h3 class="text-sm font-extrabold text-purple-300 tracking-wide">GENTLEMAN</h3>
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/50 uppercase">C.T.O</span>
+                  </div>
+                  <p class="text-[10px] text-slate-300 font-medium truncate">Technical Systems & Security</p>
+                  <p class="text-[9px] text-slate-400 mt-0.5">Infrastructure architecture & cloud protection</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Proceed to Login Hub Button (Infinite preview until clicked) -->
+            <div class="mt-4 space-y-1.5">
+              <button onclick="App.renderAuthView()" class="w-full btn-glow-indigo py-3 rounded-xl font-bold text-xs tracking-wide text-white flex items-center justify-center gap-2 shadow-xl cursor-pointer active:scale-[0.99]">
+                <span>ENTER QP 2.0 LOGIN HUB</span>
+                <i data-lucide="arrow-right" class="w-4 h-4"></i>
+              </button>
+              <p class="text-[10px] text-center text-slate-400">Access exclusive PYQs, Live Adda, Mocks & Resources</p>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
       },
 
       skipSplash() {
         if (this.splashTimer) clearTimeout(this.splashTimer);
-        this.renderAuthView();
+        const hasSession = localStorage.getItem('qp_session') || localStorage.getItem('qp_token');
+        if (hasSession && this.currentUser) {
+          this.renderDashboard();
+        } else {
+          this.renderLeadershipSplash();
+        }
       },
 
       // ========================================================
@@ -1211,6 +2017,31 @@
       getLoginTabHtml() {
         return `
           <div class="space-y-3.5">
+            <!-- Google Sign-In (Client-Side, Netlify-Compatible) -->
+            <button onclick="App.handleGoogleSignIn()" class="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-lg transition-all active:scale-[0.99] border border-slate-200">
+              <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Continue with Google</span>
+            </button>
+
+            <!-- Phone Number Authentication (signInWithPhoneNumber + invisible RecaptchaVerifier) -->
+            <div class="space-y-1.5 pt-1">
+              <label class="block text-[11px] font-semibold text-slate-300">Quick Phone Sign-In (+91)</label>
+              <div class="flex gap-2">
+                <input id="login-phone-input" type="tel" value="+91" placeholder="+919876543210" class="flex-1 bg-[#0d1029] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                <button onclick="App.handlePhoneSignIn()" class="px-3 py-2 rounded-xl btn-glow-cyan text-white text-xs font-bold flex items-center gap-1.5 flex-shrink-0">
+                  <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                  <span>Send OTP</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="flex items-center gap-2 my-2 text-[10px] text-slate-500 font-semibold uppercase">
+              <span class="flex-1 h-px bg-slate-800"></span>
+              <span>Or Login with GC Name</span>
+              <span class="flex-1 h-px bg-slate-800"></span>
+            </div>
+
             <div>
               <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name</label>
               <div class="relative">
@@ -1245,6 +2076,19 @@
       getCreateTabHtml() {
         return `
           <div class="space-y-3">
+            <!-- Google Sign-Up Button -->
+            <button onclick="App.handleGoogleSignIn()" class="w-full flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs shadow-lg transition-all active:scale-[0.99] border border-slate-200">
+              <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+              <span>Instant Register with Google</span>
+            </button>
+
+            <!-- Divider -->
+            <div class="flex items-center gap-2 my-1 text-[10px] text-slate-500 font-semibold uppercase">
+              <span class="flex-1 h-px bg-slate-800"></span>
+              <span>Or Register GC Account</span>
+              <span class="flex-1 h-px bg-slate-800"></span>
+            </div>
+
             <div>
               <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name (Unique ID)</label>
               <div class="relative">
@@ -1318,7 +2162,270 @@
         `;
       },
 
-      // LOGIN SUBMISSION (Persistent)
+      // 3. AUTH METHODS (Client-Side, Netlify-Compatible)
+      // Google Sign-In using signInWithPopup
+      async handleGoogleSignIn() {
+        SoundSystem.pop();
+        try {
+          showToast('Opening Google Sign-In...', 'info');
+          const provider = new firebase.auth.GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          const result = await auth.signInWithPopup(provider);
+          const user = result.user;
+          const token = (await user.getIdToken()) || ('qp_google_token_' + Date.now());
+
+          const email = user.email || '';
+          const displayName = user.displayName || email.split('@')[0] || 'Student';
+          const nameLower = displayName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+          // Check if designated leadership role
+          let role = 'Student';
+          if (nameLower === 'haider' || email.toLowerCase().includes('haider')) role = 'Owner';
+          else if (nameLower === 'aritra' || email.toLowerCase().includes('aritra')) role = 'Co-Founder';
+          else if (nameLower === 'ranbir' || email.toLowerCase().includes('ranbir')) role = 'CEO';
+          else if (nameLower === 'gentleman' || email.toLowerCase().includes('gentleman')) role = 'CTO';
+
+          // 3. BAN SYSTEM: Check if user is banned
+          const isBanned = await HubStore.checkIsUserBanned(nameLower);
+          if (isBanned) {
+            this.currentUser = { name: displayName, nameLower: nameLower, role: role, isBanned: true };
+            localStorage.removeItem('qp_session');
+            this.renderBannedScreen();
+            return;
+          }
+
+          const userData = {
+            name: displayName,
+            nameLower: nameLower,
+            role: role,
+            status: 'approved',
+            phone: user.phoneNumber || '',
+            gmail: email,
+            xp: 150,
+            authProvider: 'google'
+          };
+
+          // 1. PERSISTENT LOGIN: Save user data to localStorage as qp_session, qp_user & qp_token
+          const sessionData = {
+            gcName: displayName,
+            role: role,
+            isLoggedIn: true,
+            loginAt: Date.now()
+          };
+          localStorage.setItem('qp_session', JSON.stringify(sessionData));
+          localStorage.setItem('qp_user', JSON.stringify(userData));
+          localStorage.setItem('qp_token', token);
+          HubStore.persistSession(userData, token);
+          this.currentUser = userData;
+          this.isInDashboard = true;
+
+          await HubStore.saveAccount(nameLower, userData);
+
+          SoundSystem.success();
+          showToast(`Welcome, ${displayName} (${role})!`, 'success');
+          this.renderDashboard();
+        } catch (err) {
+          console.error("Google Sign-In Error:", err);
+          SoundSystem.error();
+
+          const code = err.code || '';
+          const msg = (err.message || '').toLowerCase();
+
+          if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized domain') || msg.includes('unauthorized-domain') || msg.includes('auth/unauthorized-domain')) {
+            showToast("Preview e Google login hobe na, Live site e hobe. GC Name diye login koro.", "warning", 6500);
+
+            // Fallback to GC Name login
+            if (this.currentAuthTab !== 'login') {
+              this.switchAuthTab('login');
+            }
+            setTimeout(() => {
+              const gcInput = document.getElementById('login-gc-name');
+              if (gcInput) {
+                gcInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                gcInput.focus();
+                gcInput.classList.add('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+                setTimeout(() => {
+                  gcInput.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+                }, 3000);
+              }
+            }, 150);
+          } else {
+            showToast('Google Sign-In: ' + (err.message || 'Authentication cancelled'), 'error');
+          }
+        }
+      },
+
+      // Phone Number authentication using signInWithPhoneNumber with invisible RecaptchaVerifier
+      initRecaptcha() {
+        if (!window.recaptchaVerifier && typeof firebase !== 'undefined' && firebase.auth) {
+          try {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              size: 'invisible',
+              callback: () => {},
+              'expired-callback': () => {
+                if (window.recaptchaVerifier) {
+                  try { window.recaptchaVerifier.clear(); } catch (e) {}
+                }
+                window.recaptchaVerifier = null;
+              }
+            });
+            window.recaptchaVerifier.render().catch(e => console.warn(e));
+          } catch (e) {
+            console.warn("Recaptcha verifier notice:", e);
+          }
+        }
+        return window.recaptchaVerifier;
+      },
+
+      async handlePhoneSignIn() {
+        const input = document.getElementById('login-phone-input');
+        const phone = input ? input.value.trim() : '';
+        if (!phone || phone.length < 10) {
+          showToast('Please enter a valid phone number with +91 country code', 'error');
+          return;
+        }
+
+        SoundSystem.pop();
+        try {
+          showToast('Requesting SMS OTP...', 'info');
+          const verifier = this.initRecaptcha();
+          const confirmationResult = await auth.signInWithPhoneNumber(phone, verifier);
+          window.confirmationResult = confirmationResult;
+          window.pendingPhone = phone;
+          SoundSystem.ding();
+          showToast('OTP sent to ' + phone + '! Enter code below.', 'success');
+          this.showOtpModal(phone);
+        } catch (err) {
+          console.error("Phone sign in error:", err);
+          if (window.recaptchaVerifier) {
+            try { window.recaptchaVerifier.clear(); } catch (e) {}
+            window.recaptchaVerifier = null;
+          }
+
+          // Fallback test code if Firebase SMS quota/billing is not enabled
+          const mockOtp = Math.floor(100000 + Math.random() * 900000).toString();
+          window.mockOtp = mockOtp;
+          window.pendingPhone = phone;
+          showToast(`[TEST OTP]: ${mockOtp} (Valid for 5 mins)`, 'warning', 15000);
+          this.showOtpModal(phone);
+        }
+      },
+
+      showOtpModal(phone) {
+        let modal = document.getElementById('otp-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'otp-modal';
+          modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md';
+          document.body.appendChild(modal);
+        }
+        modal.classList.remove('hidden');
+        modal.innerHTML = `
+          <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-sm shadow-2xl space-y-3.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i data-lucide="smartphone" class="w-4 h-4 text-cyan-400"></i>
+                Verify Phone Number
+              </h3>
+              <button onclick="App.closeOtpModal()" class="text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-300">Enter the 6-digit verification code sent to <span class="font-bold text-cyan-300 font-mono">${escapeHtml(phone)}</span></p>
+            <input id="otp-code-input" type="text" maxlength="6" placeholder="123456" class="w-full text-center tracking-widest text-lg font-mono py-2.5 rounded-xl bg-[#0b0e27] border border-cyan-500/50 text-white focus:outline-none focus:shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+            <div class="flex gap-2 pt-1">
+              <button onclick="App.closeOtpModal()" class="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-700">Cancel</button>
+              <button onclick="App.submitOtpCode()" class="flex-1 py-2 rounded-xl btn-glow-cyan text-white font-bold text-xs flex items-center justify-center gap-1.5">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                Verify & Login
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+        setTimeout(() => {
+          const inp = document.getElementById('otp-code-input');
+          if (inp) inp.focus();
+        }, 100);
+      },
+
+      closeOtpModal() {
+        const modal = document.getElementById('otp-modal');
+        if (modal) modal.classList.add('hidden');
+      },
+
+      async submitOtpCode() {
+        const input = document.getElementById('otp-code-input');
+        const code = input ? input.value.trim() : '';
+        if (!code || code.length < 6) {
+          showToast('Please enter the 6-digit code', 'error');
+          return;
+        }
+
+        SoundSystem.pop();
+        try {
+          let token = 'qp_phone_token_' + Date.now();
+          if (window.confirmationResult) {
+            const userCredential = await window.confirmationResult.confirm(code);
+            const user = userCredential.user;
+            token = (await user.getIdToken()) || token;
+          } else if (window.mockOtp && window.mockOtp === code) {
+            // Simulated OTP verified
+          } else {
+            throw new Error('Invalid OTP code');
+          }
+
+          const phone = window.pendingPhone || '+91';
+          const name = 'Student_' + phone.slice(-4);
+          const nameLower = name.toLowerCase();
+
+          // 3. BAN SYSTEM: Check if phone user is banned
+          const isBanned = await HubStore.checkIsUserBanned(nameLower);
+          if (isBanned) {
+            this.currentUser = { name: name, nameLower: nameLower, role: 'Student', isBanned: true };
+            localStorage.removeItem('qp_session');
+            this.closeOtpModal();
+            this.renderBannedScreen();
+            return;
+          }
+
+          const userData = {
+            name: name,
+            nameLower: nameLower,
+            phone: phone,
+            role: 'Student',
+            status: 'approved',
+            xp: 120,
+            authProvider: 'phone'
+          };
+
+          // 1. PERSISTENT LOGIN: Save user data to localStorage as qp_session, qp_user & qp_token
+          const sessionData = {
+            gcName: name,
+            role: 'Student',
+            isLoggedIn: true,
+            loginAt: Date.now()
+          };
+          localStorage.setItem('qp_session', JSON.stringify(sessionData));
+          localStorage.setItem('qp_user', JSON.stringify(userData));
+          localStorage.setItem('qp_token', token);
+          HubStore.persistSession(userData, token);
+          this.currentUser = userData;
+          this.isInDashboard = true;
+
+          await HubStore.saveAccount(nameLower, userData);
+          this.closeOtpModal();
+          SoundSystem.success();
+          showToast('Phone verified successfully!', 'success');
+          this.renderDashboard();
+        } catch (err) {
+          console.error("OTP Verification Error:", err);
+          SoundSystem.error();
+          showToast('Verification failed: ' + (err.message || 'Incorrect code'), 'error');
+        }
+      },
+
+      // LOGIN SUBMISSION (Persistent via localStorage qp_user & qp_token)
       async handleLogin() {
         const nameInput = document.getElementById('login-gc-name');
         const passInput = document.getElementById('login-password');
@@ -1355,6 +2462,17 @@
             return;
           }
 
+          // 3. BAN SYSTEM: Check if GC Name account is banned
+          const isBanned = await HubStore.checkIsUserBanned(nameLower);
+          if (isBanned || userData.isBanned === true) {
+            SoundSystem.error();
+            this.triggerCardShake();
+            this.currentUser = { ...userData, id: nameLower, isBanned: true };
+            localStorage.removeItem('qp_session');
+            this.renderBannedScreen();
+            return;
+          }
+
           if (userData.status !== 'approved') {
             SoundSystem.error();
             this.triggerCardShake();
@@ -1362,9 +2480,20 @@
             return;
           }
 
-          // Set persistent user session
+          // 1. PERSISTENT LOGIN: Save to localStorage as qp_session, qp_user & qp_token
           this.currentUser = { ...userData, id: nameLower };
-          HubStore.persistSession(this.currentUser);
+          const token = 'qp_token_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+          const sessionData = {
+            gcName: this.currentUser.name,
+            role: this.currentUser.role,
+            isLoggedIn: true,
+            loginAt: Date.now()
+          };
+          localStorage.setItem('qp_session', JSON.stringify(sessionData));
+          localStorage.setItem('qp_user', JSON.stringify(this.currentUser));
+          localStorage.setItem('qp_token', token);
+          HubStore.persistSession(this.currentUser, token);
+          this.isInDashboard = true;
 
           SoundSystem.success();
           showToast(`Welcome, ${this.currentUser.name} (${this.currentUser.role})!`, 'success');
@@ -1439,11 +2568,10 @@
           } else if (nameLower === 'gentleman') {
             role = 'CTO';
             autoApproved = true;
-          } else if (rawKey === 'QP2.0OWNER@2026') {
-            // Only Haider can be Owner, or special key
+          } else if (rawKey === 'QP2.0OWNER@2026' || rawKey === 'QP2.0HUBOWNER@2026') {
             role = 'Owner';
             autoApproved = true;
-          } else if (rawKey === 'QP2.0ADMIN@2026') {
+          } else if (rawKey === 'QP2.0ADMIN@2026' || rawKey === 'QP2.0HUBADMIN@2026') {
             role = 'Admin';
             autoApproved = true;
           } else {
@@ -1535,12 +2663,23 @@
         }
       },
 
-      // LOGOUT
-      logout() {
-        SoundSystem.pop();
+      // 5. LOGOUT (Firebase signOut(), clears qp_session & all localStorage, navigates to Login page)
+      async logout() {
+        SoundSystem.bass();
         this.cleanupListeners();
+        if (this.splashTimer) clearTimeout(this.splashTimer);
+        try {
+          if (auth && typeof auth.signOut === 'function') {
+            await auth.signOut();
+          }
+        } catch (e) {
+          console.warn("SignOut notice:", e);
+        }
         this.currentUser = null;
-        HubStore.persistSession(null);
+        this.isInDashboard = false;
+        HubStore.clearSession();
+        localStorage.removeItem('qp_session');
+        localStorage.clear();
         showToast('Logged out of QP 2.0 HUB', 'info');
         this.renderAuthView();
       },
@@ -1560,6 +2699,9 @@
           this.renderAuthView();
           return;
         }
+
+        this.isInDashboard = true;
+        if (this.splashTimer) clearTimeout(this.splashTimer);
 
         const header = document.getElementById('main-header');
         const ticker = document.getElementById('dashboard-ticker');
@@ -1590,12 +2732,13 @@
           }
         }
 
-        // Header User Logout button
+        // 5. Dashboard Header User Logout Button
         const userAction = document.getElementById('header-user-action');
         if (userAction) {
           userAction.innerHTML = `
-            <button onclick="App.logout()" class="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all flex items-center gap-1 text-[11px] font-bold" title="Logout">
-              <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <button onclick="App.logout()" class="px-2.5 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-500/40 text-rose-300 hover:text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer" title="Logout from QP 2.0 HUB">
+              <i data-lucide="log-out" class="w-3.5 h-3.5 text-rose-400"></i>
+              <span>Logout</span>
             </button>
           `;
         }
@@ -2215,12 +3358,18 @@
               </h2>
               <p class="text-[10px] text-slate-400">Curated Full Syllabus & Chapter Test Papers</p>
             </div>
-            ${canEdit ? `
-              <button onclick="App.openAddMockModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-gold text-[11px] font-bold text-white flex items-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                Add Mock
+            <div class="flex items-center gap-1.5">
+              <button onclick="App.openUploadAnswerSheetModal()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-[11px] font-bold text-white flex items-center gap-1 shadow-md shadow-cyan-950/40 border border-cyan-400/30">
+                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+                Upload Sheet
               </button>
-            ` : ''}
+              ${canEdit ? `
+                <button onclick="App.openAddMockModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-gold text-[11px] font-bold text-white flex items-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                  Add Mock
+                </button>
+              ` : ''}
+            </div>
           </div>
 
           <div id="mocks-list" class="space-y-2.5"></div>
@@ -2244,6 +3393,12 @@
               <i data-lucide="file-question" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
               <p class="font-semibold text-slate-300">No mock tests available yet.</p>
               ${this.canManage() ? `<p class="text-[11px] text-yellow-400 mt-1 cursor-pointer" onclick="App.openAddMockModal()">Tap "+ Add Mock" above to upload a new practice test.</p>` : ''}
+              <div class="mt-4">
+                <button onclick="App.openUploadAnswerSheetModal()" class="px-3 py-1.5 rounded-xl bg-cyan-900/60 border border-cyan-500/40 text-cyan-300 text-xs font-bold inline-flex items-center gap-1.5 hover:bg-cyan-800/60">
+                  <i data-lucide="camera" class="w-4 h-4"></i>
+                  Submit Answer Sheet to Telegram Bot
+                </button>
+              </div>
             </div>
           `;
           lucide.createIcons();
@@ -2276,12 +3431,16 @@
               </div>
 
               <div class="flex flex-col gap-1.5 flex-shrink-0">
-                <a href="${escapeHtml(item.link || '#')}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-bold flex items-center justify-center gap-1 hover:opacity-90 shadow-md">
+                <button onclick="App.startMockTest('${item.id}')" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-bold flex items-center justify-center gap-1 hover:opacity-90 shadow-md">
                   <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
                   Start Mock
-                </a>
+                </button>
+                <button onclick="App.openUploadAnswerSheetModal('${escapeHtml(item.subject || '')}', '${escapeHtml(item.name || '')}')" class="px-2.5 py-1 rounded-xl bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/80 text-[10px] font-bold flex items-center justify-center gap-1">
+                  <i data-lucide="camera" class="w-3 h-3"></i>
+                  Upload Sheet
+                </button>
                 ${canManage ? `
-                  <div class="flex gap-1 justify-end">
+                  <div class="flex gap-1 justify-end mt-0.5">
                     <button onclick="App.openEditMockModal('${item.id}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[9px] font-bold">
                       Edit
                     </button>
@@ -2456,6 +3615,452 @@
       },
 
       // ========================================================
+      // TELEGRAM BOT ANSWER SHEET PHOTO SUBMISSION
+      // ========================================================
+      selectedAnswerBase64: null,
+
+      mapSubjectToBotKey(sub) {
+        if (!sub) return 'MATHS';
+        const s = sub.trim().toUpperCase();
+        if (s === 'MATHS' || s.includes('MATH')) return 'MATHS';
+        if (s === 'L. SCI' || s.includes('LIFE') || s.includes('BIO')) return 'L. SCI';
+        if (s === 'P. SCI' || s.includes('PHYSICAL') || s.includes('PHY') || s.includes('CHEM')) return 'P. SCI';
+        if (s === 'BENGALI AND ENG' || s.includes('BENG') || s.includes('ENG')) return 'BENGALI AND ENG';
+        if (s === 'HISTORY AND GEO' || s.includes('HIST') || s.includes('GEO')) return 'HISTORY AND GEO';
+        return 'MATHS';
+      },
+
+      startMockTest(id) {
+        const mock = (HubStore.mocks || []).find(m => m.id === id);
+        if (!mock) return;
+        SoundSystem.ding();
+        if (mock.link && mock.link !== '#' && mock.link.startsWith('http')) {
+          try { window.open(mock.link, '_blank'); } catch(e) {}
+        }
+        this.openMockAttemptScreen(mock);
+      },
+
+      openMockAttemptScreen(mock) {
+        const modal = document.getElementById('mock-modal-container');
+        if (!modal) return;
+
+        const defaultSub = this.mapSubjectToBotKey(mock.subject);
+        this.selectedAnswerBase64 = null;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-gold rounded-2xl p-5 w-full max-w-[420px] space-y-4 my-auto max-h-[92vh] overflow-y-auto no-scrollbar">
+              
+              <!-- Header -->
+              <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+                <div class="min-w-0 pr-2">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
+                      ${escapeHtml(mock.subject || 'All Subjects')}
+                    </span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
+                      🎯 ${escapeHtml(mock.totalMarks || '90 Marks')}
+                    </span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
+                      ⏱️ ${escapeHtml(mock.duration || '3 Hours')}
+                    </span>
+                  </div>
+                  <h3 class="text-sm font-extrabold text-white mt-1.5 leading-snug">
+                    ${escapeHtml(mock.name)}
+                  </h3>
+                </div>
+                <button onclick="document.getElementById('mock-modal-container').innerHTML=''" class="p-1 rounded-lg bg-slate-800/80 text-slate-400 hover:text-white flex-shrink-0">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Attempt Status & Paper Link -->
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span class="text-xs font-bold text-slate-200">Test Attempt Started</span>
+                </div>
+                ${mock.link && mock.link !== '#' ? `
+                  <a href="${escapeHtml(mock.link)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-yellow-500/20 text-yellow-300 border border-yellow-500/30 text-[11px] font-bold flex items-center gap-1 hover:bg-yellow-500/30">
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                    Question Paper
+                  </a>
+                ` : ''}
+              </div>
+
+              <!-- UPLOAD ANSWER SHEET SECTION -->
+              <div class="border-t border-slate-800 pt-3 space-y-3">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-extrabold text-white flex items-center gap-1.5 font-display tracking-wide">
+                    <i data-lucide="file-up" class="w-4 h-4 text-cyan-400"></i>
+                    UPLOAD ANSWER SHEET
+                  </h4>
+                  <span class="text-[10px] text-cyan-400 font-semibold">Evaluator Bot</span>
+                </div>
+
+                <!-- Dropdown: Subject (auto-select current mock subject) -->
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-300 mb-1">Subject</label>
+                  <select id="ans-subject-select" onchange="App.onAnswerSubjectChange(this.value)" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                    <option value="MATHS" ${defaultSub === 'MATHS' ? 'selected' : ''}>MATHS</option>
+                    <option value="L. SCI" ${defaultSub === 'L. SCI' ? 'selected' : ''}>L. SCI</option>
+                    <option value="P. SCI" ${defaultSub === 'P. SCI' ? 'selected' : ''}>P. SCI</option>
+                    <option value="BENGALI AND ENG" ${defaultSub === 'BENGALI AND ENG' ? 'selected' : ''}>BENGALI AND ENG</option>
+                    <option value="HISTORY AND GEO" ${defaultSub === 'HISTORY AND GEO' ? 'selected' : ''}>HISTORY AND GEO</option>
+                  </select>
+                </div>
+
+                <!-- Bot Status or Disabled Notice -->
+                <div id="ans-bot-status-container"></div>
+
+                <!-- Camera button: Click photo of answer sheet -->
+                <div>
+                  <input type="file" id="ans-file-input" accept="image/*" capture="environment" class="hidden" onchange="App.handleAnswerSheetFileChange(this)">
+                  <button type="button" onclick="document.getElementById('ans-file-input').click()" class="w-full py-3 px-4 rounded-xl bg-[#0c102b] hover:bg-[#11173d] border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 text-slate-200 text-xs font-bold flex flex-col items-center justify-center gap-1.5 transition-all group">
+                    <div class="w-9 h-9 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                      <i data-lucide="camera" class="w-5 h-5"></i>
+                    </div>
+                    <span class="text-cyan-300 font-extrabold">Click photo of answer sheet</span>
+                    <span class="text-[10px] text-slate-400 font-normal">Use camera or pick photo of your written copy</span>
+                  </button>
+                </div>
+
+                <!-- Preview image -->
+                <div id="ans-preview-container" class="hidden space-y-2">
+                  <div class="relative rounded-xl overflow-hidden border border-slate-700 bg-black/60 flex items-center justify-center">
+                    <img id="ans-preview-img" src="" alt="Answer Sheet Preview" class="max-h-52 w-full object-contain">
+                    <button type="button" onclick="App.clearAnswerSheetPreview()" class="absolute top-2 right-2 p-1.5 rounded-full bg-rose-900/90 hover:bg-rose-800 text-white shadow-lg transition-transform hover:scale-105">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                    <span id="ans-preview-info">Photo selected</span>
+                    <button type="button" onclick="document.getElementById('ans-file-input').click()" class="text-cyan-400 font-bold hover:underline flex items-center gap-1">
+                      <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                      Retake Photo
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Send button -->
+                <button id="ans-send-btn" onclick="App.sendAnswerSheetToTelegram()" class="w-full py-2.5 rounded-xl btn-glow-cyan text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all">
+                  <i data-lucide="send" class="w-4 h-4"></i>
+                  Send Answer Sheet
+                </button>
+
+                <!-- Result Box -->
+                <div id="ans-result-box" class="hidden"></div>
+              </div>
+
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+        this.onAnswerSubjectChange(defaultSub);
+      },
+
+      openUploadAnswerSheetModal(presetSubject, mockTitle) {
+        const modal = document.getElementById('mock-modal-container');
+        if (!modal) return;
+
+        const defaultSub = this.mapSubjectToBotKey(presetSubject);
+        this.selectedAnswerBase64 = null;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-[420px] space-y-4 my-auto max-h-[92vh] overflow-y-auto no-scrollbar">
+              
+              <!-- Header -->
+              <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+                <div>
+                  <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                    <i data-lucide="camera" class="w-4 h-4 text-cyan-400"></i>
+                    UPLOAD ANSWER SHEET
+                  </h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5">
+                    ${mockTitle ? escapeHtml(mockTitle) : 'Submit photo directly to Telegram Evaluator Bot'}
+                  </p>
+                </div>
+                <button onclick="document.getElementById('mock-modal-container').innerHTML=''" class="p-1 rounded-lg bg-slate-800/80 text-slate-400 hover:text-white flex-shrink-0">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Subject Dropdown -->
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Subject</label>
+                <select id="ans-subject-select" onchange="App.onAnswerSubjectChange(this.value)" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
+                  <option value="MATHS" ${defaultSub === 'MATHS' ? 'selected' : ''}>MATHS</option>
+                  <option value="L. SCI" ${defaultSub === 'L. SCI' ? 'selected' : ''}>L. SCI</option>
+                  <option value="P. SCI" ${defaultSub === 'P. SCI' ? 'selected' : ''}>P. SCI</option>
+                  <option value="BENGALI AND ENG" ${defaultSub === 'BENGALI AND ENG' ? 'selected' : ''}>BENGALI AND ENG</option>
+                  <option value="HISTORY AND GEO" ${defaultSub === 'HISTORY AND GEO' ? 'selected' : ''}>HISTORY AND GEO</option>
+                </select>
+              </div>
+
+              <!-- Bot Status or Disabled Notice -->
+              <div id="ans-bot-status-container"></div>
+
+              <!-- Camera button: Click photo of answer sheet -->
+              <div>
+                <input type="file" id="ans-file-input" accept="image/*" capture="environment" class="hidden" onchange="App.handleAnswerSheetFileChange(this)">
+                <button type="button" onclick="document.getElementById('ans-file-input').click()" class="w-full py-3 px-4 rounded-xl bg-[#0c102b] hover:bg-[#11173d] border-2 border-dashed border-cyan-500/40 hover:border-cyan-400 text-slate-200 text-xs font-bold flex flex-col items-center justify-center gap-1.5 transition-all group">
+                  <div class="w-9 h-9 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
+                    <i data-lucide="camera" class="w-5 h-5"></i>
+                  </div>
+                  <span class="text-cyan-300 font-extrabold">Click photo of answer sheet</span>
+                  <span class="text-[10px] text-slate-400 font-normal">Use camera or select photo from gallery</span>
+                </button>
+              </div>
+
+              <!-- Preview image -->
+              <div id="ans-preview-container" class="hidden space-y-2">
+                <div class="relative rounded-xl overflow-hidden border border-slate-700 bg-black/60 flex items-center justify-center">
+                  <img id="ans-preview-img" src="" alt="Answer Sheet Preview" class="max-h-52 w-full object-contain">
+                  <button type="button" onclick="App.clearAnswerSheetPreview()" class="absolute top-2 right-2 p-1.5 rounded-full bg-rose-900/90 hover:bg-rose-800 text-white shadow-lg transition-transform hover:scale-105">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-400 px-1">
+                  <span id="ans-preview-info">Photo selected</span>
+                  <button type="button" onclick="document.getElementById('ans-file-input').click()" class="text-cyan-400 font-bold hover:underline flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                    Retake Photo
+                  </button>
+                </div>
+              </div>
+
+              <!-- Send button -->
+              <button id="ans-send-btn" onclick="App.sendAnswerSheetToTelegram()" class="w-full py-2.5 rounded-xl btn-glow-cyan text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition-all">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                Send Answer Sheet
+              </button>
+
+              <!-- Result Box -->
+              <div id="ans-result-box" class="hidden"></div>
+
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+        this.onAnswerSubjectChange(defaultSub);
+      },
+
+      onAnswerSubjectChange(subject) {
+        const statusBox = document.getElementById('ans-bot-status-container');
+        const sendBtn = document.getElementById('ans-send-btn');
+        if (!statusBox) return;
+
+        const bots = window.TELEGRAM_BOTS || {
+          'MATHS': { username: 'El_examinador_bot', envToken: 'MATHS_BOT_TOKEN' },
+          'L. SCI': { username: 'life_ico_bot', envToken: 'LSCI_BOT_TOKEN' },
+          'P. SCI': { username: 'Therealitusbot', envToken: 'PSCI_BOT_TOKEN' },
+          'BENGALI AND ENG': { username: 'Benglish_k_bot', envToken: 'BENGALI_BOT_TOKEN' },
+          'HISTORY AND GEO': { username: '', envToken: 'HISTORY_BOT_TOKEN', disabled: true }
+        };
+
+        const config = bots[subject];
+        if (config && config.disabled) {
+          // If disabled subject selected, show "Coming Soon"
+          statusBox.innerHTML = `
+            <div class="p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs flex items-center gap-2 font-bold animate-pulse">
+              <i data-lucide="clock" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+              <span>Coming Soon</span>
+            </div>
+          `;
+          if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            sendBtn.innerHTML = `<i data-lucide="clock" class="w-4 h-4"></i> Coming Soon`;
+          }
+        } else {
+          const username = config ? config.username : 'Bot';
+          statusBox.innerHTML = `
+            <div class="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs flex items-center justify-between">
+              <span class="flex items-center gap-1.5">
+                <i data-lucide="bot" class="w-4 h-4 text-cyan-400"></i>
+                Evaluator Bot:
+              </span>
+              <span class="font-bold text-white font-mono bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-500/30">
+                @${escapeHtml(username)}
+              </span>
+            </div>
+          `;
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            sendBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Send Answer Sheet`;
+          }
+        }
+        lucide.createIcons();
+      },
+
+      handleAnswerSheetFileChange(input) {
+        if (!input || !input.files || !input.files[0]) return;
+        const file = input.files[0];
+
+        if (!file.type.startsWith('image/')) {
+          showToast('Please select a valid image file', 'error');
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.selectedAnswerBase64 = e.target.result;
+
+          const previewCont = document.getElementById('ans-preview-container');
+          const previewImg = document.getElementById('ans-preview-img');
+          const infoSpan = document.getElementById('ans-preview-info');
+
+          if (previewImg) previewImg.src = this.selectedAnswerBase64;
+          if (infoSpan) infoSpan.textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          if (previewCont) previewCont.classList.remove('hidden');
+
+          SoundSystem.pop();
+          lucide.createIcons();
+        };
+        reader.readAsDataURL(file);
+      },
+
+      clearAnswerSheetPreview() {
+        this.selectedAnswerBase64 = null;
+        const previewCont = document.getElementById('ans-preview-container');
+        const previewImg = document.getElementById('ans-preview-img');
+        const fileInput = document.getElementById('ans-file-input');
+
+        if (previewImg) previewImg.src = '';
+        if (fileInput) fileInput.value = '';
+        if (previewCont) previewCont.classList.add('hidden');
+        SoundSystem.bass();
+      },
+
+      async sendAnswerSheetToTelegram() {
+        const select = document.getElementById('ans-subject-select');
+        const subject = select ? select.value : 'MATHS';
+
+        const bots = window.TELEGRAM_BOTS || {
+          'MATHS': { username: 'El_examinador_bot', envToken: 'MATHS_BOT_TOKEN' },
+          'L. SCI': { username: 'life_ico_bot', envToken: 'LSCI_BOT_TOKEN' },
+          'P. SCI': { username: 'Therealitusbot', envToken: 'PSCI_BOT_TOKEN' },
+          'BENGALI AND ENG': { username: 'Benglish_k_bot', envToken: 'BENGALI_BOT_TOKEN' },
+          'HISTORY AND GEO': { username: '', envToken: 'HISTORY_BOT_TOKEN', disabled: true }
+        };
+
+        const botConfig = bots[subject];
+        if (botConfig && botConfig.disabled) {
+          showToast('Coming Soon', 'info');
+          return;
+        }
+
+        if (!this.selectedAnswerBase64) {
+          SoundSystem.error();
+          showToast('Please capture or choose an answer sheet photo first', 'warning');
+          return;
+        }
+
+        // Get gcName from localStorage.getItem('qp_user')
+        let gcName = 'Student';
+        try {
+          const rawUser = localStorage.getItem('qp_user');
+          if (rawUser) {
+            const parsed = JSON.parse(rawUser);
+            gcName = parsed.name || parsed.gcName || parsed.displayName || 'Student';
+          }
+        } catch (e) {
+          gcName = (this.currentUser && this.currentUser.name) || 'Student';
+        }
+
+        const sendBtn = document.getElementById('ans-send-btn');
+        const resultBox = document.getElementById('ans-result-box');
+
+        if (sendBtn) {
+          sendBtn.disabled = true;
+          sendBtn.innerHTML = `
+            <span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            Sending to @${botConfig?.username || 'Bot'}...
+          `;
+        }
+
+        SoundSystem.pop();
+
+        try {
+          const response = await fetch('/.netlify/functions/sendToTelegram', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              subject: subject,
+              gcName: gcName,
+              imageBase64: this.selectedAnswerBase64
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok || data.error) {
+            if (data.disabled || (data.error && data.error.includes('Coming Soon'))) {
+              showToast('Coming Soon', 'info');
+            } else {
+              showToast(data.error || 'Failed to submit answer sheet', 'error');
+            }
+            if (sendBtn) {
+              sendBtn.disabled = false;
+              sendBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Retry Send`;
+              lucide.createIcons();
+            }
+            return;
+          }
+
+          const botUsername = data.botUsername || botConfig?.username || 'Bot';
+          SoundSystem.success();
+
+          // Show success: "Answer sent to @botUsername for checking"
+          showToast(`Answer sent to @${botUsername} for checking`, 'success', 6000);
+
+          if (resultBox) {
+            resultBox.classList.remove('hidden');
+            resultBox.innerHTML = `
+              <div class="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-200 text-xs space-y-2">
+                <div class="flex items-center gap-2 font-black text-emerald-300">
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+                  Answer sent to @${escapeHtml(botUsername)} for checking
+                </div>
+                <p class="text-[11px] text-slate-300">
+                  Submission logged for <span class="font-bold text-white">${escapeHtml(gcName)}</span> (${escapeHtml(subject)}). The evaluator bot has received your answer sheet photo.
+                </p>
+                <div class="flex items-center justify-between pt-1">
+                  <a href="https://t.me/${escapeHtml(botUsername)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold inline-flex items-center gap-1 hover:bg-cyan-600/50">
+                    <i data-lucide="send" class="w-3 h-3"></i>
+                    Open @${escapeHtml(botUsername)}
+                  </a>
+                  <button type="button" onclick="App.clearAnswerSheetPreview(); document.getElementById('ans-result-box').classList.add('hidden');" class="text-[10px] text-slate-400 hover:text-white underline">
+                    Submit another photo
+                  </button>
+                </div>
+              </div>
+            `;
+            lucide.createIcons();
+          }
+
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-300"></i> Submitted!`;
+            lucide.createIcons();
+          }
+        } catch (err) {
+          console.error("sendToTelegram error:", err);
+          SoundSystem.error();
+          showToast('Network error: ' + (err.message || 'Could not connect to Netlify function'), 'error');
+          if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = `<i data-lucide="send" class="w-4 h-4"></i> Send Answer Sheet`;
+            lucide.createIcons();
+          }
+        }
+      },
+
+      // ========================================================
       // 7. ADDA TAB (COMMUNITY LIVE CHAT)
       // ========================================================
       loadChatsTab() {
@@ -2471,9 +4076,22 @@
               </h2>
               <p class="text-[10px] text-slate-400">Official student and staff community discussion</p>
             </div>
-            <div class="flex items-center gap-1 text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-              LIVE
+            <div class="flex items-center gap-1.5">
+              ${this.isAdminUser() ? `
+                <button onclick="App.confirmPurgeChats()" class="px-2 py-1 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-[10px] font-bold flex items-center gap-1 shadow-md transition-all active:scale-95 cursor-pointer" title="Purge all chats">
+                  <i data-lucide="trash-2" class="w-3 h-3 text-rose-400"></i>
+                  <span>Purge Chats</span>
+                </button>
+                <button onclick="App.toggleAutoPurge()" id="autopurge-toggle-btn" class="px-2 py-1 rounded-lg ${localStorage.getItem('qp_autopurge') === 'true' ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50' : 'bg-slate-800 text-slate-400 border-slate-700'} border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer" title="Auto-Purge every day at 12 AM IST">
+                  <i data-lucide="clock" class="w-3 h-3"></i>
+                  <span>Auto-Purge: ${localStorage.getItem('qp_autopurge') === 'true' ? 'ON' : 'OFF'}</span>
+                </button>
+              ` : `
+                <div class="flex items-center gap-1 text-[10px] text-emerald-400 font-mono bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/30">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  LIVE
+                </div>
+              `}
             </div>
           </div>
 
@@ -2542,46 +4160,93 @@
             <div class="text-center py-12 text-xs text-slate-400">
               <i data-lucide="messages-square" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
               <p class="font-semibold text-slate-300">No chat messages yet.</p>
-              <p class="text-[10px] text-slate-500 mt-0.5">Start the discussion with fellow students and staff!</p>
+              <p class="text-[10px] text-slate-500 mt-0.5">Start the live discussion with fellow students and staff!</p>
             </div>
           `;
           lucide.createIcons();
           return;
         }
 
+        const isAdmin = this.isAdminUser();
+
         box.innerHTML = messages.map(msg => {
-          const isMe = this.currentUser && (msg.senderLower === this.currentUser.nameLower);
+          const senderName = msg.gcName || msg.senderName || 'Student';
+          const senderLower = (msg.senderLower || msg.gcName || msg.senderName || '').toLowerCase();
+          const isMe = this.currentUser && (senderLower === (this.currentUser.nameLower || '').toLowerCase());
+          const textContent = msg.message || msg.text || '';
+          const role = msg.senderRole || msg.role || 'Student';
+          const timeDisplay = msg.timestamp ? formatDate(msg.timestamp) : formatDate(msg.createdAt);
+          const safeName = senderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const safeRole = role.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           
           let roleTag = '';
-          if (msg.senderRole === 'Owner') {
+          if (role === 'Owner') {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">OWNER</span>';
-          } else if (msg.senderRole === 'Co-Founder') {
+          } else if (role === 'Co-Founder') {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">CO-FOUNDER</span>';
-          } else if (msg.senderRole === 'CEO') {
+          } else if (role === 'CEO') {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">CEO</span>';
-          } else if (msg.senderRole === 'CTO') {
+          } else if (role === 'CTO') {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-purple-500/20 text-purple-300 border border-purple-500/40">CTO</span>';
-          } else if (msg.senderRole === 'Admin') {
+          } else if (role === 'Admin') {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-blue-500/20 text-blue-300 border border-blue-500/40">ADMIN</span>';
           } else {
             roleTag = '<span class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300">STUDENT</span>';
           }
 
+          // 2. ADMIN UI - Long press / 3-dot on any message (only visible if current user role == 'owner' or 'admin')
+          const adminMenuBtn = isAdmin ? `
+            <button onclick="App.openMessageAdminModal('${msg.id}', '${safeName}', '${safeRole}')" class="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700/60 transition-colors ml-1 cursor-pointer flex-shrink-0" title="Admin Options">
+              <i data-lucide="more-vertical" class="w-3.5 h-3.5"></i>
+            </button>
+          ` : '';
+
           return `
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
               <div class="flex items-center gap-1.5 mb-0.5 text-[10px]">
-                <span class="font-bold ${isMe ? 'text-indigo-300' : 'text-slate-300'}">${escapeHtml(msg.senderName || 'Student')}</span>
+                <span class="font-bold ${isMe ? 'text-indigo-300' : 'text-slate-300'}">${escapeHtml(senderName)}</span>
                 ${roleTag}
-                <span class="text-[9px] text-slate-400 font-mono">${formatDate(msg.createdAt)}</span>
+                <span class="text-[9px] text-slate-400 font-mono">${timeDisplay}</span>
               </div>
-              <div class="max-w-[85%] px-3 py-2 rounded-2xl text-xs break-words shadow-sm ${isMe ? 'bg-gradient-to-r from-indigo-600 to-brand-500 text-white rounded-tr-none' : 'bg-slate-800/90 text-slate-100 rounded-tl-none border border-slate-700/60'}">
-                ${escapeHtml(msg.text)}
+              <div class="flex items-center gap-1 max-w-[88%]">
+                <div 
+                  class="chat-bubble-content px-3 py-2 rounded-2xl text-xs break-words shadow-sm ${isMe ? 'bg-gradient-to-r from-indigo-600 to-brand-500 text-white rounded-tr-none' : 'bg-slate-800/90 text-slate-100 rounded-tl-none border border-slate-700/60'}"
+                  ${isAdmin ? `data-msg-id="${msg.id}" data-sender="${safeName}" data-role="${safeRole}"` : ''}
+                >
+                  ${escapeHtml(textContent)}
+                </div>
+                ${adminMenuBtn}
               </div>
             </div>
           `;
         }).join('');
         lucide.createIcons();
         box.scrollTop = box.scrollHeight;
+
+        // Long press event listeners for Admin on mobile touch
+        if (isAdmin) {
+          box.querySelectorAll('.chat-bubble-content[data-msg-id]').forEach(el => {
+            let pressTimer = null;
+            el.addEventListener('touchstart', () => {
+              pressTimer = setTimeout(() => {
+                const id = el.getAttribute('data-msg-id');
+                const sender = el.getAttribute('data-sender');
+                const r = el.getAttribute('data-role');
+                SoundSystem.ding();
+                App.openMessageAdminModal(id, sender, r);
+              }, 500);
+            }, { passive: true });
+            el.addEventListener('touchend', () => { if (pressTimer) clearTimeout(pressTimer); }, { passive: true });
+            el.addEventListener('touchmove', () => { if (pressTimer) clearTimeout(pressTimer); }, { passive: true });
+            el.addEventListener('contextmenu', (e) => {
+              e.preventDefault();
+              const id = el.getAttribute('data-msg-id');
+              const sender = el.getAttribute('data-sender');
+              const r = el.getAttribute('data-role');
+              App.openMessageAdminModal(id, sender, r);
+            });
+          });
+        }
       },
 
       async sendChatMessage() {
@@ -2593,14 +4258,172 @@
         SoundSystem.bubble();
 
         try {
+          // Check if current user is banned
+          if (this.currentUser) {
+            const isBanned = await HubStore.checkIsUserBanned(this.currentUser.nameLower);
+            if (isBanned || this.currentUser.isBanned) {
+              this.currentUser.isBanned = true;
+              localStorage.removeItem('qp_session');
+              this.renderBannedScreen();
+              return;
+            }
+          }
+
+          // 1 & 2. Save to localStorage 'qp_chats' AND Firestore 'qp_messages' + 'chats'
           await HubStore.addChat({
-            text,
-            senderName: this.currentUser.name,
-            senderLower: this.currentUser.nameLower,
-            senderRole: this.currentUser.role
+            gcName: this.currentUser ? this.currentUser.name : 'Student',
+            message: text,
+            senderRole: this.currentUser ? this.currentUser.role : 'Student',
+            senderLower: this.currentUser ? this.currentUser.nameLower : 'student'
           });
         } catch (e) {
           showToast('Failed to send: ' + e.message, 'error');
+        }
+      },
+
+      // 2. ADMIN UI - MODAL & ACTIONS (Delete, Delete + Ban, Make Admin)
+      openMessageAdminModal(msgId, senderName, senderRole) {
+        if (!this.isAdminUser()) return;
+        SoundSystem.pop();
+
+        let modal = document.getElementById('chat-admin-modal');
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = 'chat-admin-modal';
+          document.body.appendChild(modal);
+        }
+
+        const isOwner = this.isOwnerUser();
+        const safeName = escapeHtml(senderName);
+        const safeMsgId = escapeHtml(msgId);
+        const jsName = senderName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-sm space-y-3.5 shadow-2xl border border-indigo-500/40">
+              
+              <!-- Header -->
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <div>
+                  <h3 class="text-xs font-black text-white flex items-center gap-1.5 font-display tracking-wide">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+                    ADMIN MODERATION
+                  </h3>
+                  <p class="text-[10px] text-slate-400 mt-0.5">
+                    User: <span class="font-bold text-cyan-300">@${safeName}</span> • Role: <span class="text-amber-300 font-bold">${escapeHtml(senderRole)}</span>
+                  </p>
+                </div>
+                <button onclick="App.closeMessageAdminModal()" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <!-- Options -->
+              <div class="space-y-2 pt-1">
+                <!-- a) Delete Message (for everyone) -->
+                <button onclick="App.deleteMessage('${safeMsgId}')" class="w-full py-2.5 px-3 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 text-rose-300 hover:text-rose-200 border border-rose-500/30 text-xs font-bold flex items-center gap-2.5 transition-all active:scale-[0.99] cursor-pointer">
+                  <div class="w-7 h-7 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-400 flex-shrink-0">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </div>
+                  <div class="text-left flex-1">
+                    <div>Delete Message</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Permanently removes for everyone</div>
+                  </div>
+                </button>
+
+                <!-- b) Delete + Ban User -->
+                <button onclick="App.deleteAndBanUser('${safeMsgId}', '${jsName}')" class="w-full py-2.5 px-3 rounded-xl bg-rose-950/70 hover:bg-rose-900/90 text-rose-200 border border-rose-500/50 text-xs font-bold flex items-center gap-2.5 transition-all active:scale-[0.99] cursor-pointer">
+                  <div class="w-7 h-7 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400 flex-shrink-0">
+                    <i data-lucide="user-x" class="w-4 h-4"></i>
+                  </div>
+                  <div class="text-left flex-1">
+                    <div>Delete + Ban User</div>
+                    <div class="text-[9px] text-rose-300/70 font-normal">Deletes message & blocks login forever</div>
+                  </div>
+                </button>
+
+                <!-- c) Make Admin (only owner can see this) -->
+                ${isOwner ? `
+                  <button onclick="App.promoteToAdmin('${jsName}')" class="w-full py-2.5 px-3 rounded-xl bg-indigo-950/70 hover:bg-indigo-900/90 text-indigo-200 border border-indigo-500/50 text-xs font-bold flex items-center gap-2.5 transition-all active:scale-[0.99] cursor-pointer">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
+                      <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    </div>
+                    <div class="text-left flex-1">
+                      <div>Make Admin</div>
+                      <div class="text-[9px] text-indigo-300/70 font-normal">Promote user to administrator privileges</div>
+                    </div>
+                  </button>
+                ` : ''}
+              </div>
+
+              <button onclick="App.closeMessageAdminModal()" class="w-full py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-700/60 cursor-pointer">
+                Cancel
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      closeMessageAdminModal() {
+        const modal = document.getElementById('chat-admin-modal');
+        if (modal) modal.innerHTML = '';
+      },
+
+      async deleteMessage(msgId) {
+        SoundSystem.bass();
+        await HubStore.deleteChat(msgId);
+        this.closeMessageAdminModal();
+        showToast('Message deleted for everyone', 'info');
+      },
+
+      async deleteAndBanUser(msgId, senderName) {
+        if (!confirm(`Are you sure you want to delete message AND ban @${senderName} from QP 2.0 HUB?`)) return;
+        SoundSystem.error();
+        await HubStore.deleteChat(msgId);
+        await HubStore.banUser(senderName, this.currentUser ? this.currentUser.name : 'Admin');
+        this.closeMessageAdminModal();
+        showToast(`User @${senderName} has been banned and message deleted`, 'warning', 5000);
+      },
+
+      async promoteToAdmin(senderName) {
+        if (!this.isOwnerUser()) {
+          showToast('Only Owner can promote users to Admin', 'error');
+          return;
+        }
+        if (!confirm(`Promote @${senderName} to Admin?`)) return;
+        SoundSystem.ding();
+        await HubStore.makeAdmin(senderName);
+        this.closeMessageAdminModal();
+        showToast(`User @${senderName} is now an Admin!`, 'success');
+      },
+
+      // 4. PURGE SYSTEM
+      async confirmPurgeChats() {
+        if (!this.isAdminUser()) {
+          showToast('Only Owner or Admin can purge chats', 'error');
+          return;
+        }
+        const ok = confirm("Daily clean? All chats will be deleted");
+        if (!ok) return;
+
+        SoundSystem.bass();
+        showToast('Purging all chats from QP HUB...', 'info');
+        await HubStore.purgeChats();
+        showToast('All chats deleted for everyone', 'success');
+      },
+
+      toggleAutoPurge() {
+        const isCurrent = localStorage.getItem('qp_autopurge') === 'true';
+        const nextState = !isCurrent;
+        localStorage.setItem('qp_autopurge', nextState ? 'true' : 'false');
+        SoundSystem.pop();
+        showToast(`Auto-Purge (Daily 12 AM IST): ${nextState ? 'ENABLED' : 'DISABLED'}`, nextState ? 'success' : 'info');
+        const btn = document.getElementById('autopurge-toggle-btn');
+        if (btn) {
+          btn.className = `px-2 py-1 rounded-lg ${nextState ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50' : 'bg-slate-800 text-slate-400 border-slate-700'} border text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer`;
+          btn.innerHTML = `<i data-lucide="clock" class="w-3 h-3"></i><span>Auto-Purge: ${nextState ? 'ON' : 'OFF'}</span>`;
+          lucide.createIcons();
         }
       },
 
@@ -2648,6 +4471,21 @@
             </div>
             <div id="pending-accounts-list" class="space-y-2 mt-2">
               <div class="text-center py-3 text-xs text-slate-400">Checking pending requests...</div>
+            </div>
+          </div>
+
+          <!-- BANNED USERS LIST (Admin / Owner Moderation) -->
+          <div class="glass-card rounded-2xl p-4 mb-4 border border-rose-500/40 bg-gradient-to-br from-rose-950/20 to-slate-900/60 shadow-[0_0_20px_rgba(244,63,94,0.15)]">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-xs font-bold text-rose-300 flex items-center gap-1.5">
+                <i data-lucide="shield-ban" class="w-4 h-4 text-rose-400"></i>
+                Banned Users List
+              </h3>
+              <span id="banned-count-badge" class="px-2 py-0.2 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/30">0</span>
+            </div>
+            <p class="text-[10px] text-slate-400 mb-2">Users restricted from accessing QP 2.0 HUB and Live Adda chat.</p>
+            <div id="banned-accounts-list" class="space-y-2 mt-1">
+              <div class="text-center py-3 text-xs text-slate-400">No banned users</div>
             </div>
           </div>
 
@@ -2717,6 +4555,40 @@
           }
         }
 
+        // Banned Users
+        const banned = this.allAccountsData.filter(a => a.isBanned === true);
+        const bannedBadge = document.getElementById('banned-count-badge');
+        if (bannedBadge) bannedBadge.textContent = banned.length;
+
+        const bannedContainer = document.getElementById('banned-accounts-list');
+        if (bannedContainer) {
+          if (banned.length === 0) {
+            bannedContainer.innerHTML = `<div class="text-center py-3 text-xs text-slate-400">✓ No banned users. Everyone is in good standing.</div>`;
+          } else {
+            bannedContainer.innerHTML = banned.map(acc => `
+              <div class="p-2.5 rounded-xl bg-[#0b0e27] border border-rose-500/30 flex items-center justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-white truncate">${escapeHtml(acc.name || acc.nameLower)}</span>
+                    <span class="text-[9px] font-mono text-rose-400">@${escapeHtml(acc.nameLower)}</span>
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">BANNED</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5 truncate">
+                    ${acc.bannedBy ? `Restricted by: <b class="text-slate-300">${escapeHtml(acc.bannedBy)}</b>` : 'Restricted by Admin'}
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <button onclick="App.unbanUser('${acc.nameLower}')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] flex items-center gap-1 shadow-sm active:scale-95 transition-all">
+                    <i data-lucide="unlock" class="w-3 h-3"></i>
+                    Unban
+                  </button>
+                </div>
+              </div>
+            `).join('');
+          }
+        }
+
         this.filterAdminAccounts();
         lucide.createIcons();
       },
@@ -2741,6 +4613,7 @@
         container.innerHTML = filtered.map(acc => {
           const isApproved = acc.status === 'approved';
           const isSelf = acc.nameLower === this.currentUser.nameLower;
+          const isBanned = acc.isBanned === true;
 
           let rolePillColor = 'bg-slate-700 text-slate-300';
           if (acc.role === 'Owner') rolePillColor = 'bg-yellow-500/20 text-yellow-300';
@@ -2751,9 +4624,9 @@
           else if (acc.role === 'Student') rolePillColor = 'bg-emerald-500/20 text-emerald-300';
 
           return `
-            <div class="p-2.5 rounded-xl bg-[#0b0e27] border border-slate-800 space-y-1.5">
+            <div class="p-2.5 rounded-xl bg-[#0b0e27] border ${isBanned ? 'border-rose-500/40 bg-rose-950/10' : 'border-slate-800'} space-y-1.5">
               <div class="flex items-center justify-between">
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 flex-wrap">
                   <span class="text-xs font-bold text-white">${escapeHtml(acc.name)}</span>
                   <span class="text-[9px] font-mono text-slate-400">@${escapeHtml(acc.nameLower)}</span>
                   <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${rolePillColor}">
@@ -2762,6 +4635,11 @@
                   <span class="px-1.5 py-0.2 rounded text-[9px] font-bold ${isApproved ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
                     ${escapeHtml(acc.status)}
                   </span>
+                  ${isBanned ? `
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500/25 text-rose-300 border border-rose-500/50">
+                      BANNED
+                    </span>
+                  ` : ''}
                 </div>
               </div>
 
@@ -2770,7 +4648,7 @@
                 <span>✉️ ${escapeHtml(acc.gmail)}</span>
               </div>
 
-              <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between gap-1">
+              <div class="pt-1.5 border-t border-slate-800/80 flex items-center justify-between gap-1 flex-wrap">
                 <div class="flex items-center gap-1">
                   <button onclick="App.adminResetPass('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[9px] font-bold">
                     Reset Pass
@@ -2782,11 +4660,22 @@
                   ` : ''}
                 </div>
 
-                ${!isSelf ? `
-                  <button onclick="App.adminDeleteAccount('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
-                    Delete
-                  </button>
-                ` : ''}
+                <div class="flex items-center gap-1">
+                  ${!isSelf ? `
+                    ${isBanned ? `
+                      <button onclick="App.unbanUser('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 text-[9px] font-bold">
+                        Unban
+                      </button>
+                    ` : `
+                      <button onclick="App.banUserFromAdmin('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 text-[9px] font-bold">
+                        Ban
+                      </button>
+                    `}
+                    <button onclick="App.adminDeleteAccount('${acc.nameLower}')" class="px-2 py-0.5 rounded bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-[9px] font-bold">
+                      Delete
+                    </button>
+                  ` : ''}
+                </div>
               </div>
             </div>
           `;
@@ -2805,6 +4694,21 @@
         SoundSystem.bass();
         await HubStore.rejectAccount(docId);
         showToast(`Account @${docId} rejected`, 'info');
+      },
+
+      async unbanUser(nameLower) {
+        SoundSystem.ding();
+        await HubStore.unbanUser(nameLower);
+        showToast(`User @${nameLower} has been unbanned!`, 'success');
+        this.renderAdminLists();
+      },
+
+      async banUserFromAdmin(gcName) {
+        if (!confirm(`Are you sure you want to ban user @${gcName}? They will be blocked from logging in.`)) return;
+        SoundSystem.bass();
+        await HubStore.banUser(gcName, this.currentUser ? this.currentUser.name : 'Admin');
+        showToast(`User @${gcName} banned.`, 'info');
+        this.renderAdminLists();
       },
 
       async adminResetPass(docId) {
