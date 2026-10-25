@@ -220,6 +220,23 @@
       overflow-x: hidden;
     }
   </style>
+  <!-- Remove any previously installed service worker that could serve stale HTML for API routes. -->
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.getRegistrations()
+          .then(function (registrations) {
+            return Promise.all(registrations.map(function (registration) {
+              return registration.unregister();
+            }));
+          })
+          .catch(function (error) {
+            console.warn('Service worker cleanup warning:', error);
+          });
+      });
+    })();
+  </script>
 </head>
 <body class="min-h-screen bg-[#070814] flex justify-center items-start text-slate-100">
 
@@ -955,15 +972,11 @@
             }
           };
 
-          // 1. Listen to 'qp_messages' collection
-          db.collection('qp_messages')
+          // Firestore is the sole remote chat source: collection 'chats', oldest first.
+          db.collection('chats')
             .orderBy('timestamp', 'asc')
             .onSnapshot(handleSnapshot, (err) => {
-              console.warn("qp_messages onSnapshot note:", err.message);
-              // Fallback to 'chats' collection if qp_messages has any indexing delay
-              db.collection('chats')
-                .orderBy('timestamp', 'asc')
-                .onSnapshot(handleSnapshot, (e2) => console.warn("chats onSnapshot note:", e2.message));
+              console.warn("chats onSnapshot note:", err.message);
             });
         } catch (e) {
           console.warn("Firestore onSnapshot setup notice:", e);
@@ -1328,11 +1341,17 @@
         // 3. Immediately write to IndexedDB backup
         ChatDB.saveChats(this.chats);
 
-        // 4. Send to Firestore collections 'qp_messages' and 'chats'
+        // 4. Send chats only to Firestore collection 'chats'.
         if (db) {
           try {
-            db.collection('qp_messages').doc(localId).set(payload).catch(e => console.warn(e));
-            db.collection('chats').doc(localId).set(payload).catch(e => console.warn(e));
+            const firestorePayload = {
+              gcName,
+              message: text,
+              senderRole: role,
+              senderLower: gcName.toLowerCase(),
+              timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('chats').doc(localId).set(firestorePayload);
           } catch (e) {
             console.warn("Firestore chats add notice:", e.message);
           }
@@ -1357,13 +1376,12 @@
 
         if (db) {
           try {
-            db.collection('qp_messages').doc(msgId).delete().catch(() => {});
-            db.collection('chats').doc(msgId).delete().catch(() => {});
+            await db.collection('chats').doc(msgId).delete();
           } catch (e) {}
         }
       },
 
-      // Purge all chats: delete all docs in 'qp_messages' & 'chats' + clear localStorage 'qp_chats'
+      // Purge all chats from Firestore 'chats' + clear local backups
       async purgeChats() {
         this.chats = [];
         try {
@@ -1378,15 +1396,10 @@
 
         if (db) {
           try {
-            const snap1 = await db.collection('qp_messages').get();
-            const b1 = db.batch();
-            snap1.forEach(doc => b1.delete(doc.ref));
-            await b1.commit();
-
-            const snap2 = await db.collection('chats').get();
-            const b2 = db.batch();
-            snap2.forEach(doc => b2.delete(doc.ref));
-            await b2.commit();
+            const snap = await db.collection('chats').get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
           } catch (e) {
             console.warn("Purge firestore error:", e);
           }
@@ -3996,7 +4009,14 @@
             })
           });
 
-          const data = await response.json();
+          const responseText = await response.text();
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error('Telegram endpoint returned non-JSON:', response.status, responseText.slice(0, 200));
+            data = { error: 'The Telegram endpoint returned HTML instead of JSON. Redeploy the function and clear the site cache.' };
+          }
 
           if (!response.ok || data.error) {
             if (data.disabled || (data.error && data.error.includes('Coming Soon'))) {
