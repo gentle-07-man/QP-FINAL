@@ -2,16 +2,12 @@
   "version": 2,
   "rewrites": [
     {
-      "source": "/api/telegram",
-      "destination": "/api/telegram.js"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
-      "source": "/.netlify/functions/sendToTelegram",
-      "destination": "/api/telegram.js"
-    },
-    {
-      "source": "/.netlify/functions/sendMock",
-      "destination": "/api/telegram.js"
+      "source": "/.netlify/functions/:path*",
+      "destination": "/api/:path*"
     },
     {
       "source": "/(.*)",
