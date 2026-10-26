@@ -1287,90 +1287,52 @@
       },
 
       initChatsListener() {
-        if (!db) return;
-        try {
-          const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'student';
+  if (!db) return;
+  try {
+    const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'guest';
+    
+    db.collection("chats").doc("general_adda").set({
+      id: "general_adda",
+      name: "Community Adda",
+      participants: firebase.firestore.FieldValue.arrayUnion(uid),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
 
-          // Register user in room participants for cross-device visibility
-          db.collection("chats").doc("general_adda").set({
-            id: "general_adda",
-            name: "Community Adda",
-            participants: firebase.firestore.FieldValue.arrayUnion(uid),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true }).catch(() => {});
+    const handleMsgSnapshot = (snapshot) => {
+      if (!snapshot) return;
+      const msgs = [];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (!d.message && !d.text) return;
+        msgs.push({
+          id: d.id || doc.id,
+          gcName: d.gcName || d.senderName || 'Student',
+          message: d.message || d.text || '',
+          timestamp: d.timestamp || d.createdAt || null,
+          senderRole: d.senderRole || d.role || 'Student',
+          senderLower: (d.gcName || d.senderName || '').toLowerCase(),
+          uid: d.uid || '',
+          createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
+        });
+      });
+      msgs.sort((a,b) => (a.createdAt - b.createdAt));
+      this.chats = msgs;
+      try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+      if (typeof ChatDB !== 'undefined' && ChatDB.saveChats) ChatDB.saveChats(this.chats);
+      this.notify('chats', true);
+    };
 
-          const handleMsgSnapshot = (snapshot) => {
-            if (!snapshot) return;
-            const msgs = [];
-            snapshot.forEach(doc => {
-              const d = doc.data();
-              msgs.push({
-                id: doc.id,
-                gcName: d.gcName || d.senderName || 'Student',
-                message: d.message || d.text || '',
-                timestamp: d.timestamp,
-                senderRole: d.senderRole || d.role || 'Student',
-                senderLower: (d.gcName || d.senderName || '').toLowerCase(),
-                uid: d.uid || '',
-                createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
-              });
-            });
+    // Main listener - khali hok ba na hok sobsomoy chalbe
+    db.collection("chats").doc("general_adda").collection("messages")
+      .orderBy("timestamp", "asc")
+      .onSnapshot(handleMsgSnapshot, (err) => {
+        console.warn("chats listener err:", err.message);
+      });
 
-            this.chats = msgs;
-            try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
-            ChatDB.saveChats(this.chats);
-            this.notify('chats', true);
-          };
-
-          // 1. Participant room query as requested in spec
-          db.collection("chats")
-            .where("participants", "array-contains", uid)
-            .onSnapshot(() => {}, () => {});
-
-          // 2. Real-time message subcollection listener for cross-device phone A to phone B
-          db.collection("chats").doc("general_adda").collection("messages")
-            .orderBy("timestamp", "asc")
-            .onSnapshot((snap) => {
-              if (snap && !snap.empty) {
-                handleMsgSnapshot(snap);
-              } else {
-                // If subcollection is empty, also check direct docs in chats collection
-                db.collection("chats").orderBy("timestamp", "asc").get().then((flatSnap) => {
-                  const flatMsgs = [];
-                  flatSnap.forEach(doc => {
-                    if (doc.id !== 'general_adda') {
-                      const d = doc.data();
-                      if (d.message || d.text) {
-                        flatMsgs.push({
-                          id: doc.id,
-                          gcName: d.gcName || d.senderName || 'Student',
-                          message: d.message || d.text || '',
-                          timestamp: d.timestamp,
-                          senderRole: d.senderRole || d.role || 'Student',
-                          senderLower: (d.gcName || d.senderName || '').toLowerCase(),
-                          uid: d.uid || '',
-                          createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date()
-                        });
-                      }
-                    }
-                  });
-                  this.chats = flatMsgs;
-                  try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
-                  ChatDB.saveChats(this.chats);
-                  this.notify('chats', true);
-                }).catch(() => {
-                  this.chats = [];
-                  this.notify('chats');
-                });
-              }
-            }, (err) => {
-              console.warn("chats listener notice:", err.message);
-            });
-        } catch (e) {
-          console.warn("Firestore chats listener setup notice:", e);
-        }
-      },
-
+  } catch (e) {
+    console.warn("chats setup err:", e);
+  }
+},
       initUsersListener() {
         if (!db) return;
         try {
