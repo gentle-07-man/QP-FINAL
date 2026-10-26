@@ -63,9 +63,14 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
   <!-- Telegram Bots Configuration -->
-  <script type="module">
-    import { TELEGRAM_BOTS } from '/src/config/telegramBots.js';
-    window.TELEGRAM_BOTS = TELEGRAM_BOTS;
+  <script>
+    window.TELEGRAM_BOTS = {
+      'MATHS': { username: 'El_examinador_bot', envToken: 'MATHS_BOT_TOKEN' },
+      'L. SCI': { username: 'life_ico_bot', envToken: 'LSCI_BOT_TOKEN' },
+      'P. SCI': { username: 'Therealitusbot', envToken: 'PSCI_BOT_TOKEN' },
+      'BENGALI AND ENG': { username: 'Benglish_k_bot', envToken: 'BENGALI_BOT_TOKEN' },
+      'HISTORY AND GEO': { username: '', envToken: 'HISTORY_BOT_TOKEN', disabled: true }
+    };
   </script>
 
   <style>
@@ -372,43 +377,70 @@
 
           <!-- DRAWER MENU LIST -->
           <div class="space-y-1 text-xs font-semibold text-slate-300">
-            <!-- Batches -->
-            <button onclick="App.openBatchesModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+            <!-- 1. Profile -->
+            <button onclick="App.openProfileModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
-                <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
-                <span>Batches & Groups</span>
+                <i data-lucide="user-check" class="w-4 h-4 text-indigo-400"></i>
+                <span>Profile & Account</span>
               </span>
               <span class="text-[10px] text-slate-400">View</span>
             </button>
 
-            <!-- Leaderboard Shortcut -->
-            <button onclick="App.openLeaderboardModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+            <!-- 2. Batches -->
+            <button onclick="App.switchDashboardTab('batches'); App.toggleMenuDrawer(false);" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+              <span class="flex items-center gap-2.5">
+                <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i>
+                <span>Batches</span>
+              </span>
+              <span class="text-[10px] text-cyan-300 font-bold">Study Groups</span>
+            </button>
+
+            <!-- 3. Test Series (Mock + PYQ) -->
+            <button onclick="App.openTestSeriesModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
                 <i data-lucide="award" class="w-4 h-4 text-amber-400"></i>
-                <span>Weekly Leaderboard</span>
+                <span>Test Series</span>
               </span>
-              <span class="text-[10px] text-amber-300 font-bold">Top Ranks</span>
+              <span class="text-[10px] text-amber-300 font-bold">Mock + PYQ</span>
             </button>
 
-            <!-- Official Telegram Channel -->
-            <a href="https://t.me/UPDATES_01" target="_blank" rel="noopener noreferrer" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+            <!-- 4. Library (Question Bank) -->
+            <button onclick="App.openLibraryModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
-                <i data-lucide="send" class="w-4 h-4 text-sky-400"></i>
-                <span>Official TG Channel</span>
+                <i data-lucide="book-marked" class="w-4 h-4 text-emerald-400"></i>
+                <span>Library</span>
               </span>
-              <span class="text-[10px] font-mono text-sky-300">@UPDATES_01</span>
-            </a>
+              <span class="text-[10px] text-emerald-400 font-bold">Question Bank</span>
+            </button>
 
-            <!-- Socials & Community -->
+            <!-- 5. Downloads -->
+            <button onclick="App.openDownloadsModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+              <span class="flex items-center gap-2.5">
+                <i data-lucide="download" class="w-4 h-4 text-blue-400"></i>
+                <span>Downloads</span>
+              </span>
+              <span class="text-[10px] text-slate-400">Saved</span>
+            </button>
+
+            <!-- 6. About us -->
+            <button onclick="App.openAboutModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+              <span class="flex items-center gap-2.5">
+                <i data-lucide="info" class="w-4 h-4 text-purple-400"></i>
+                <span>About us</span>
+              </span>
+              <span class="text-[10px] text-slate-400">QP 2.0 Hub</span>
+            </button>
+
+            <!-- 7. Contact us -->
             <button onclick="App.openContactModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
-                <i data-lucide="share-2" class="w-4 h-4 text-purple-400"></i>
-                <span>Socials & Community</span>
+                <i data-lucide="share-2" class="w-4 h-4 text-sky-400"></i>
+                <span>Contact us</span>
               </span>
-              <span class="text-[10px] text-slate-400">YT • IG • WA</span>
+              <span class="text-[10px] text-sky-300 font-mono">TG • YT • IG</span>
             </button>
 
-            <!-- Help & Support -->
+            <!-- 8. Help & Support -->
             <button onclick="App.openSupportModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
                 <i data-lucide="life-buoy" class="w-4 h-4 text-emerald-400"></i>
@@ -417,31 +449,97 @@
               <span class="text-[10px] text-emerald-400 font-bold">Raise Ticket</span>
             </button>
 
-            <!-- Legal Policies -->
-            <button onclick="App.openLegalModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+            <!-- 9. Terms & Conditions -->
+            <button onclick="App.openLegalModal('terms')" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
               <span class="flex items-center gap-2.5">
-                <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
-                <span>Privacy & Terms</span>
+                <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i>
+                <span>Terms & Conditions</span>
               </span>
-              <span class="text-[10px] text-slate-400">Legal</span>
+              <span class="text-[10px] text-slate-400">Policy</span>
             </button>
 
-            <!-- ADMIN-ONLY: User Logs & Admin Center -->
-            <div id="drawer-admin-section" class="hidden pt-2 border-t border-slate-800/80 space-y-1">
-              <div class="px-3 py-1 text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">Leadership Moderation</div>
+            <!-- 10. App Guide Tour -->
+            <button onclick="App.openAppTourModal()" class="w-full py-2 px-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-all">
+              <span class="flex items-center gap-2.5">
+                <i data-lucide="compass" class="w-4 h-4 text-pink-400"></i>
+                <span>App Guide Tour</span>
+              </span>
+              <span class="text-[10px] text-pink-300 font-bold">Walkthrough</span>
+            </button>
+
+            <!-- 11. Logout (red) -->
+            <button onclick="App.logout()" class="w-full py-2 px-3 rounded-xl hover:bg-rose-950/60 text-rose-300 flex items-center justify-between text-left transition-all">
+              <span class="flex items-center gap-2.5 font-bold">
+                <i data-lucide="log-out" class="w-4 h-4 text-rose-400"></i>
+                <span>Logout</span>
+              </span>
+              <span class="text-[10px] text-rose-400">Exit</span>
+            </button>
+
+            <!-- DIVIDER -->
+            <div id="drawer-admin-divider" class="hidden my-2 border-t border-slate-800"></div>
+
+            <!-- ADMIN-ONLY Section (Visible only to owner / admin) -->
+            <div id="drawer-admin-section" class="hidden space-y-1">
+              <div class="px-3 py-1 text-[10px] font-black text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+                <span>ADMIN ONLY</span>
+              </div>
               <button onclick="App.openUserLogsModal()" class="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 flex items-center justify-between text-left transition-all border border-amber-500/30">
                 <span class="flex items-center gap-2">
                   <i data-lucide="clipboard-list" class="w-4 h-4"></i>
-                  <span>User Login Logs</span>
+                  <span>User Logs</span>
                 </span>
-                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-400/20">Admin Only</span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-400/20">Logs</span>
               </button>
-              <button onclick="App.switchDashboardTab('admin')" class="w-full py-2 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 flex items-center justify-between text-left transition-all border border-indigo-500/30">
+              <button onclick="App.switchDashboardTab('admin'); App.toggleMenuDrawer(false);" class="w-full py-2 px-3 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 flex items-center justify-between text-left transition-all border border-indigo-500/30">
                 <span class="flex items-center gap-2">
                   <i data-lucide="shield-alert" class="w-4 h-4"></i>
                   <span>Admin Control Center</span>
                 </span>
-                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-indigo-400/20">Full Access</span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-indigo-400/20">Control</span>
+              </button>
+              <button onclick="App.openBannedUsersModal()" class="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 flex items-center justify-between text-left transition-all border border-rose-500/30">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="user-x" class="w-4 h-4"></i>
+                  <span>Banned Users</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-rose-400/20">Manage</span>
+              </button>
+              <button onclick="App.openMakeAdminModal()" class="w-full py-2 px-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 flex items-center justify-between text-left transition-all border border-blue-500/30">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="user-plus" class="w-4 h-4"></i>
+                  <span>Make Admin</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-blue-400/20">Roles</span>
+              </button>
+              <button onclick="App.openBatchesModal()" class="w-full py-2 px-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 flex items-center justify-between text-left transition-all border border-cyan-500/30">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="layers" class="w-4 h-4"></i>
+                  <span>Manage Batches</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-cyan-400/20">Add/Del</span>
+              </button>
+              <button onclick="App.openManageSocialsModal()" class="w-full py-2 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 flex items-center justify-between text-left transition-all border border-purple-500/30">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="settings" class="w-4 h-4"></i>
+                  <span>Manage Socials & Email</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-purple-400/20">Config</span>
+              </button>
+              <button onclick="App.openConfigureSixthTabModal()" class="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 flex items-center justify-between text-left transition-all border border-amber-500/30">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="layout" class="w-4 h-4"></i>
+                  <span>Configure 6th Tab</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-400/20">Edit Tab</span>
+              </button>
+              <button onclick="App.confirmPurgeChats()" class="w-full py-2 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-200 flex items-center justify-between text-left transition-all border border-rose-500/40">
+                <span class="flex items-center gap-2">
+                  <i data-lucide="trash-2" class="w-4 h-4 text-rose-400"></i>
+                  <span>Purge Chats</span>
+                </span>
+                <span class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-rose-500/20">Admin</span>
               </button>
             </div>
           </div>
@@ -480,34 +578,44 @@
       <!-- Injected via JavaScript -->
     </main>
 
-    <!-- BOTTOM APP NAVIGATION -->
+    <!-- BOTTOM APP NAVIGATION - FOR ALL USERS (NO ADMIN BUTTON EVER) -->
     <nav id="bottom-nav" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 bg-[#0c0f27]/95 backdrop-blur-2xl border-t border-slate-800/80 px-2 py-2 items-center justify-around shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
+      <!-- 1. Batches (FIRST TAB) -->
+      <button onclick="App.switchDashboardTab('batches')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="batches">
+        <i data-lucide="layers" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">Batches</span>
+      </button>
+
+      <!-- 2. PYQ -->
       <button onclick="App.switchDashboardTab('pyqs')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="pyqs">
         <i data-lucide="book-open" class="w-5 h-5 mb-0.5"></i>
-        <span class="text-[10px] font-bold tracking-tight">PYQs</span>
+        <span class="text-[10px] font-bold tracking-tight">PYQ</span>
       </button>
 
-      <button onclick="App.switchDashboardTab('notices')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all relative" data-tab="notices">
-        <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
-        <span class="text-[10px] font-bold tracking-tight">Notices</span>
-        <span id="nav-notices-badge" class="hidden absolute top-1 right-5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-[#0c0f27]"></span>
-      </button>
-
+      <!-- 3. Mock -->
       <button onclick="App.switchDashboardTab('mocks')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="mocks">
         <i data-lucide="file-check-2" class="w-5 h-5 mb-0.5"></i>
-        <span class="text-[10px] font-bold tracking-tight">Mocks</span>
+        <span class="text-[10px] font-bold tracking-tight">Mock</span>
       </button>
 
+      <!-- 4. Adda -->
       <button onclick="App.switchDashboardTab('chats')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all relative" data-tab="chats">
         <i data-lucide="messages-square" class="w-5 h-5 mb-0.5"></i>
         <span class="text-[10px] font-bold tracking-tight">Adda</span>
         <span class="absolute top-1 right-5 w-2 h-2 rounded-full bg-cyan-400"></span>
       </button>
 
-      <!-- Admin Tab (Visible to Owner, Co-Founder, CEO, CTO, Admin) -->
-      <button id="nav-admin-btn" onclick="App.switchDashboardTab('admin')" class="hidden nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-yellow-400 hover:text-yellow-300 transition-all" data-tab="admin">
-        <i data-lucide="shield-alert" class="w-5 h-5 mb-0.5"></i>
-        <span class="text-[10px] font-extrabold tracking-tight">Admin</span>
+      <!-- 5. Bulletins -->
+      <button onclick="App.switchDashboardTab('notices')" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all relative" data-tab="notices">
+        <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-bold tracking-tight">Bulletins</span>
+        <span id="nav-notices-badge" class="hidden absolute top-1 right-5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-[#0c0f27]"></span>
+      </button>
+
+      <!-- 6. Coming Soon (Dynamic 6th tab configurable by Owner) -->
+      <button id="nav-sixth-tab-btn" onclick="App.handleSixthTabClick()" class="nav-tab-btn flex-1 flex flex-col items-center py-1 rounded-xl text-slate-400 hover:text-white transition-all" data-tab="sixth">
+        <i id="nav-sixth-tab-icon" data-lucide="sparkles" class="w-5 h-5 mb-0.5 text-amber-400"></i>
+        <span id="nav-sixth-tab-label" class="text-[10px] font-bold tracking-tight">Coming Soon</span>
       </button>
     </nav>
   </div>
@@ -550,6 +658,51 @@
 
     const db = firebase.firestore();
     const auth = firebase.auth();
+
+    // Cross-Device UID tracking and Auth State Listener
+    let currentUid = localStorage.getItem('qp_current_uid') || null;
+    window.currentUid = currentUid;
+
+    function initApp(uid) {
+      if (!uid) return;
+      currentUid = uid;
+      window.currentUid = uid;
+      try { localStorage.setItem('qp_current_uid', uid); } catch(e) {}
+
+      if (db && currentUid) {
+        // Register user in active participants of general adda
+        db.collection("chats").doc("general_adda").set({
+          id: "general_adda",
+          name: "Community Adda",
+          participants: firebase.firestore.FieldValue.arrayUnion(currentUid),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(() => {});
+
+        // Realtime sync role and ban status from qp_users
+        db.collection("qp_users").doc(currentUid).onSnapshot((doc) => {
+          if (doc && doc.exists) {
+            const d = doc.data();
+            if (d.role && App.currentUser) {
+              App.currentUser.role = d.role === 'owner' ? 'Owner' : (d.role === 'admin' ? 'Admin' : 'Student');
+              App.updateHeaderAndDrawer();
+            }
+            if (d.isBanned === true && App.currentUser) {
+              App.currentUser.isBanned = true;
+              localStorage.removeItem('qp_session');
+              App.renderBannedScreen();
+            }
+          }
+        }, () => {});
+      }
+
+      if (HubStore) {
+        if (typeof HubStore.initChatsListener === 'function') HubStore.initChatsListener();
+        if (typeof HubStore.initBatchesListener === 'function') HubStore.initBatchesListener();
+        if (typeof HubStore.initLeaderboardsListener === 'function') HubStore.initLeaderboardsListener();
+        if (typeof HubStore.initAppConfigListener === 'function') HubStore.initAppConfigListener();
+        if (typeof HubStore.initQuestionBanksListener === 'function') HubStore.initQuestionBanksListener();
+      }
+    }
 
     // 1. PERSISTENT LOGIN: Set Firebase auth persistence to browser local persistence
     try {
@@ -966,7 +1119,7 @@
     // Clean, empty database with persistent login & persistent chats
     // ========================================================
     const HubStore = {
-      firestoreAvailable: false,
+      firestoreAvailable: true,
 
       // 100% CLEAN EMPTY COLLECTIONS (NO DUMMY EXAMPLES)
       accounts: new Map(),
@@ -974,24 +1127,37 @@
       notices: [],
       mocks: [],
       chats: [],
+      batches: [],
+      leaderboardPoints: [],
+      leaderboardMocks: [],
+      questionBanks: [],
+      appConfig: {
+        sixthTabName: 'Coming Soon',
+        sixthTabEnabled: false,
+        sixthTabLink: ''
+      },
 
       subscribers: {
         accounts: new Set(),
         pyqs: new Set(),
         notices: new Set(),
         mocks: new Set(),
-        chats: new Set()
+        chats: new Set(),
+        batches: new Set(),
+        leaderboardPoints: new Set(),
+        leaderboardMocks: new Set(),
+        questionBanks: new Set()
       },
 
       channel: null,
 
       init() {
-        // Pre-populate core leadership accounts so Haider, Aritra, Ranbir, and Gentleman can log in
+        // Pre-populate core leadership accounts
         Object.values(LEADERSHIP_ACCOUNTS).forEach(acc => {
           this.accounts.set(acc.nameLower, { ...acc, isBanned: false });
         });
 
-        // 1. CHAT PERSISTENCE: Instantly load cached chats from localStorage
+        // Load cached chats from localStorage
         try {
           const cachedChats = localStorage.getItem('qp_chats');
           if (cachedChats) {
@@ -1004,7 +1170,7 @@
           console.warn("Error reading qp_chats from localStorage:", e);
         }
 
-        // 2. CHAT PERSISTENCE: Check IndexedDB backup if localStorage was cleared
+        // Check IndexedDB backup if localStorage was cleared
         ChatDB.getAllChats().then(idbChats => {
           if ((!this.chats || this.chats.length === 0) && Array.isArray(idbChats) && idbChats.length > 0) {
             this.chats = idbChats;
@@ -1099,20 +1265,42 @@
           }
         } catch (e) {}
 
-        // Check if user session exists in localStorage (qp_token & qp_user)
+        // Check if user session exists in localStorage
         this.restorePersistentSession();
 
-        // Real-time Firestore chats listener ordered by timestamp ascending
+        // Real-time Firestore chats listener
         this.initChatsListener();
 
-        // Real-time Firestore users listener to keep roles and bans synchronized
+        // Real-time Firestore users listener
         this.initUsersListener();
+
+        // Real-time Firestore batches listener
+        this.initBatchesListener();
+
+        // Real-time Firestore leaderboards listener
+        this.initLeaderboardsListener();
+
+        // Real-time Firestore appConfig listener
+        this.initAppConfigListener();
+
+        // Real-time Firestore question banks listener
+        this.initQuestionBanksListener();
       },
 
       initChatsListener() {
         if (!db) return;
         try {
-          const handleSnapshot = (snapshot) => {
+          const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'student';
+
+          // Register user in room participants for cross-device visibility
+          db.collection("chats").doc("general_adda").set({
+            id: "general_adda",
+            name: "Community Adda",
+            participants: firebase.firestore.FieldValue.arrayUnion(uid),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true }).catch(() => {});
+
+          const handleMsgSnapshot = (snapshot) => {
             if (!snapshot) return;
             const msgs = [];
             snapshot.forEach(doc => {
@@ -1124,30 +1312,63 @@
                 timestamp: d.timestamp,
                 senderRole: d.senderRole || d.role || 'Student',
                 senderLower: (d.gcName || d.senderName || '').toLowerCase(),
+                uid: d.uid || '',
                 createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
               });
             });
 
-            if (msgs.length > 0) {
-              this.chats = msgs;
-              // Save to localStorage immediately
-              try {
-                localStorage.setItem('qp_chats', JSON.stringify(this.chats));
-              } catch (e) {}
-              // Save to IndexedDB backup
-              ChatDB.saveChats(this.chats);
-              this.notify('chats', true);
-            }
+            this.chats = msgs;
+            try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+            ChatDB.saveChats(this.chats);
+            this.notify('chats', true);
           };
 
-          // Firestore is the sole remote chat source: collection 'chats', oldest first.
-          db.collection('chats')
-            .orderBy('timestamp', 'asc')
-            .onSnapshot(handleSnapshot, (err) => {
-              console.warn("chats onSnapshot note:", err.message);
+          // 1. Participant room query as requested in spec
+          db.collection("chats")
+            .where("participants", "array-contains", uid)
+            .onSnapshot(() => {}, () => {});
+
+          // 2. Real-time message subcollection listener for cross-device phone A to phone B
+          db.collection("chats").doc("general_adda").collection("messages")
+            .orderBy("timestamp", "asc")
+            .onSnapshot((snap) => {
+              if (snap && !snap.empty) {
+                handleMsgSnapshot(snap);
+              } else {
+                // If subcollection is empty, also check direct docs in chats collection
+                db.collection("chats").orderBy("timestamp", "asc").get().then((flatSnap) => {
+                  const flatMsgs = [];
+                  flatSnap.forEach(doc => {
+                    if (doc.id !== 'general_adda') {
+                      const d = doc.data();
+                      if (d.message || d.text) {
+                        flatMsgs.push({
+                          id: doc.id,
+                          gcName: d.gcName || d.senderName || 'Student',
+                          message: d.message || d.text || '',
+                          timestamp: d.timestamp,
+                          senderRole: d.senderRole || d.role || 'Student',
+                          senderLower: (d.gcName || d.senderName || '').toLowerCase(),
+                          uid: d.uid || '',
+                          createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : new Date()
+                        });
+                      }
+                    }
+                  });
+                  this.chats = flatMsgs;
+                  try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
+                  ChatDB.saveChats(this.chats);
+                  this.notify('chats', true);
+                }).catch(() => {
+                  this.chats = [];
+                  this.notify('chats');
+                });
+              }
+            }, (err) => {
+              console.warn("chats listener notice:", err.message);
             });
         } catch (e) {
-          console.warn("Firestore onSnapshot setup notice:", e);
+          console.warn("Firestore chats listener setup notice:", e);
         }
       },
 
@@ -1173,12 +1394,15 @@
                 });
               }
 
-              // If current user became banned, immediately kick them out!
               if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === id) {
                 if (data.isBanned === true) {
                   App.currentUser.isBanned = true;
                   localStorage.removeItem('qp_session');
                   App.renderBannedScreen();
+                }
+                if (data.role) {
+                  App.currentUser.role = data.role === 'owner' ? 'Owner' : (data.role === 'admin' ? 'Admin' : 'Student');
+                  App.updateHeaderAndDrawer();
                 }
               }
             });
@@ -1189,9 +1413,78 @@
         } catch (e) {}
       },
 
+      // BATCHES LISTENER - NO AUTO BATCH CREATION BY BOT
+      initBatchesListener() {
+        if (!db) return;
+        try {
+          db.collection("batches").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach(doc => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.batches = list;
+            this.notify('batches');
+            if (App && typeof App.renderBatchesCards === 'function') {
+              App.renderBatchesCards();
+            }
+          }, (err) => {
+            console.warn("batches listener notice:", err.message);
+          });
+        } catch (e) {}
+      },
+
+      // LEADERBOARDS LISTENER - REAL FIRESTORE, ZERO DUMMY
+      initLeaderboardsListener() {
+        if (!db) return;
+        try {
+          db.collection("leaderboard_points").orderBy("points", "desc").limit(50).onSnapshot((snap) => {
+            const list = [];
+            snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+            this.leaderboardPoints = list;
+            this.notify('leaderboardPoints');
+          }, (err) => console.warn("leaderboard_points notice:", err.message));
+
+          db.collection("leaderboard").orderBy("marks", "desc").limit(50).onSnapshot((snap) => {
+            const list = [];
+            snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+            this.leaderboardMocks = list;
+            this.notify('leaderboardMocks');
+          }, (err) => console.warn("leaderboard notice:", err.message));
+        } catch (e) {}
+      },
+
+      // 6TH TAB APP CONFIG LISTENER
+      initAppConfigListener() {
+        if (!db) return;
+        try {
+          db.collection("config").doc("appConfig").onSnapshot((doc) => {
+            if (doc && doc.exists) {
+              this.appConfig = { ...this.appConfig, ...doc.data() };
+              if (App && typeof App.updateSixthTabButton === 'function') {
+                App.updateSixthTabButton();
+              }
+            }
+          }, () => {});
+        } catch (e) {}
+      },
+
+      // QUESTION BANKS LISTENER
+      initQuestionBanksListener() {
+        if (!db) return;
+        try {
+          db.collection("question_banks").orderBy("createdAt", "desc").onSnapshot((snapshot) => {
+            const list = [];
+            snapshot.forEach(doc => {
+              list.push({ id: doc.id, ...doc.data() });
+            });
+            this.questionBanks = list;
+            this.notify('questionBanks');
+          }, () => {});
+        } catch (e) {}
+      },
+
       restorePersistentSession() {
         try {
-          // 1. Check primary qp_session key { gcName, role, isLoggedIn, loginAt }
           const sessionStr = localStorage.getItem('qp_session');
           if (sessionStr) {
             const sess = JSON.parse(sessionStr);
@@ -1215,7 +1508,6 @@
             }
           }
 
-          // 2. Check fallback qp_token & qp_user
           const token = localStorage.getItem('qp_token');
           const savedUser = localStorage.getItem('qp_user');
           if (token && savedUser) {
@@ -1274,6 +1566,10 @@
           else if (collectionName === 'notices') data = this.notices;
           else if (collectionName === 'mocks') data = this.mocks;
           else if (collectionName === 'chats') data = this.chats;
+          else if (collectionName === 'batches') data = this.batches;
+          else if (collectionName === 'leaderboardPoints') data = this.leaderboardPoints;
+          else if (collectionName === 'leaderboardMocks') data = this.leaderboardMocks;
+          else if (collectionName === 'questionBanks') data = this.questionBanks;
           subs.forEach(fn => fn(data, isNewIncoming));
         }
       },
@@ -1287,6 +1583,10 @@
         else if (collectionName === 'notices') initialData = this.notices;
         else if (collectionName === 'mocks') initialData = this.mocks;
         else if (collectionName === 'chats') initialData = this.chats;
+        else if (collectionName === 'batches') initialData = this.batches;
+        else if (collectionName === 'leaderboardPoints') initialData = this.leaderboardPoints;
+        else if (collectionName === 'leaderboardMocks') initialData = this.leaderboardMocks;
+        else if (collectionName === 'questionBanks') initialData = this.questionBanks;
         callback(initialData);
 
         return () => {
@@ -1296,8 +1596,7 @@
 
       // ACCOUNTS
       async getAccount(nameLower) {
-        // Check Firestore first if active
-        if (db && this.firestoreAvailable) {
+        if (db) {
           try {
             const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1800));
             const docSnap = await Promise.race([
@@ -1320,7 +1619,7 @@
         if (this.channel) {
           this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: data });
         }
-        if (db && this.firestoreAvailable) {
+        if (db) {
           db.collection('gc_accounts').doc(nameLower).set(data).catch(() => {});
         }
         return true;
@@ -1336,7 +1635,7 @@
             this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
           }
         }
-        if (db && this.firestoreAvailable) {
+        if (db) {
           db.collection('gc_accounts').doc(nameLower).update({
             myPass: newPass,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1354,8 +1653,9 @@
             this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
           }
         }
-        if (db && this.firestoreAvailable) {
+        if (db) {
           db.collection('gc_accounts').doc(nameLower).update({ role: newRole }).catch(() => {});
+          db.collection('qp_users').doc(nameLower).set({ role: newRole.toLowerCase() }, { merge: true }).catch(() => {});
         }
       },
 
@@ -1370,7 +1670,7 @@
             this.channel.postMessage({ type: 'ACCOUNT_UPSERT', payload: acc });
           }
         }
-        if (db && this.firestoreAvailable) {
+        if (db) {
           db.collection('gc_accounts').doc(nameLower).update({ status: 'approved' }).catch(() => {});
         }
       },
@@ -1381,7 +1681,7 @@
         if (this.channel) {
           this.channel.postMessage({ type: 'ACCOUNT_DELETE', payload: nameLower });
         }
-        if (db && this.firestoreAvailable) {
+        if (db) {
           db.collection('gc_accounts').doc(nameLower).delete().catch(() => {});
         }
       },
@@ -1396,7 +1696,7 @@
         this.pyqs.unshift(full);
         this.notify('pyqs');
         if (this.channel) this.channel.postMessage({ type: 'PYQ_UPSERT', payload: full });
-        if (db && this.firestoreAvailable) db.collection('pyqs').add(full).catch(() => {});
+        if (db) db.collection('pyqs').add(full).catch(() => {});
         return full;
       },
 
@@ -1413,6 +1713,12 @@
         this.pyqs = this.pyqs.filter(p => p.id !== id);
         this.notify('pyqs');
         if (this.channel) this.channel.postMessage({ type: 'PYQ_DELETE', payload: id });
+        if (db) {
+          try {
+            const snap = await db.collection('pyqs').where('id', '==', id).get();
+            snap.forEach(d => d.ref.delete());
+          } catch(e) {}
+        }
       },
 
       // NOTICES CRUD
@@ -1425,7 +1731,7 @@
         this.notices.unshift(full);
         this.notify('notices');
         if (this.channel) this.channel.postMessage({ type: 'NOTICE_UPSERT', payload: full });
-        if (db && this.firestoreAvailable) db.collection('notices').add(full).catch(() => {});
+        if (db) db.collection('notices').add(full).catch(() => {});
         return full;
       },
 
@@ -1442,6 +1748,12 @@
         this.notices = this.notices.filter(n => n.id !== id);
         this.notify('notices');
         if (this.channel) this.channel.postMessage({ type: 'NOTICE_DELETE', payload: id });
+        if (db) {
+          try {
+            const snap = await db.collection('notices').where('id', '==', id).get();
+            snap.forEach(d => d.ref.delete());
+          } catch(e) {}
+        }
       },
 
       // MOCKS CRUD
@@ -1454,7 +1766,7 @@
         this.mocks.unshift(full);
         this.notify('mocks');
         if (this.channel) this.channel.postMessage({ type: 'MOCK_UPSERT', payload: full });
-        if (db && this.firestoreAvailable) db.collection('mocks').add(full).catch(() => {});
+        if (db) db.collection('mocks').add(full).catch(() => {});
         return full;
       },
 
@@ -1471,19 +1783,29 @@
         this.mocks = this.mocks.filter(m => m.id !== id);
         this.notify('mocks');
         if (this.channel) this.channel.postMessage({ type: 'MOCK_DELETE', payload: id });
+        if (db) {
+          try {
+            const snap = await db.collection('mocks').where('id', '==', id).get();
+            snap.forEach(d => d.ref.delete());
+          } catch(e) {}
+        }
       },
 
-      // CHATS - Public Firestore collection 'qp_messages' + 'chats' + localStorage 'qp_chats' + IndexedDB backup
+      // CHATS - Cross-Device phone A to phone B Firestore synchronization
       async addChat(item) {
         const localId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
         const gcName = item.gcName || (App.currentUser ? App.currentUser.name : 'Student');
         const role = item.senderRole || (App.currentUser ? App.currentUser.role : 'Student');
         const text = item.message || item.text || '';
+        const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'student';
 
         const payload = {
           id: localId,
+          uid: uid,
           gcName: gcName,
+          senderName: gcName,
           message: text,
+          text: text,
           senderRole: role,
           senderLower: gcName.toLowerCase(),
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1495,31 +1817,20 @@
           createdAt: new Date()
         };
 
-        // 1. Immediately store in local chats array
         if (!this.chats.some(c => c.id === localMsg.id)) {
           this.chats.push(localMsg);
           this.notify('chats', true);
         }
 
-        // 2. Immediately write to localStorage 'qp_chats'
         try {
           localStorage.setItem('qp_chats', JSON.stringify(this.chats));
         } catch (e) {}
-
-        // 3. Immediately write to IndexedDB backup
         ChatDB.saveChats(this.chats);
 
-        // 4. Send chats only to Firestore collection 'chats'.
         if (db) {
           try {
-            const firestorePayload = {
-              gcName,
-              message: text,
-              senderRole: role,
-              senderLower: gcName.toLowerCase(),
-              timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            await db.collection('chats').doc(localId).set(firestorePayload);
+            await db.collection("chats").doc("general_adda").collection("messages").add(payload);
+            await db.collection("chats").doc(localId).set(payload);
           } catch (e) {
             console.warn("Firestore chats add notice:", e.message);
           }
@@ -1529,7 +1840,6 @@
         return localMsg;
       },
 
-      // Delete message from Firestore + localStorage + IndexedDB for everyone
       async deleteChat(msgId) {
         this.chats = this.chats.filter(c => c.id !== msgId);
         try {
@@ -1545,11 +1855,12 @@
         if (db) {
           try {
             await db.collection('chats').doc(msgId).delete();
+            const subDocs = await db.collection('chats').doc('general_adda').collection('messages').where('id', '==', msgId).get();
+            subDocs.forEach(d => d.ref.delete());
           } catch (e) {}
         }
       },
 
-      // Purge all chats from Firestore 'chats' + clear local backups
       async purgeChats() {
         this.chats = [];
         try {
@@ -1564,17 +1875,25 @@
 
         if (db) {
           try {
+            const subSnap = await db.collection("chats").doc("general_adda").collection("messages").get();
+            const batch1 = db.batch();
+            subSnap.forEach(d => batch1.delete(d.ref));
+            await batch1.commit();
+
             const snap = await db.collection('chats').get();
-            const batch = db.batch();
-            snap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
+            const batch2 = db.batch();
+            snap.forEach(doc => {
+              if (doc.id !== 'general_adda') {
+                batch2.delete(doc.ref);
+              }
+            });
+            await batch2.commit();
           } catch (e) {
             console.warn("Purge firestore error:", e);
           }
         }
       },
 
-      // BAN USER SYSTEM: Firestore 'qp_users' + local accounts
       async banUser(gcName, bannedBy = 'Admin') {
         const nameLower = (gcName || '').toLowerCase().trim();
         let acc = this.accounts.get(nameLower);
@@ -1596,7 +1915,6 @@
         }
         this.notify('accounts');
 
-        // Firestore collection 'qp_users'
         if (db) {
           try {
             await db.collection('qp_users').doc(nameLower).set({
@@ -1616,7 +1934,6 @@
           this.channel.postMessage({ type: 'USER_BANNED', payload: { nameLower } });
         }
 
-        // If current user is banned, immediately kick them out
         if (App.currentUser && (App.currentUser.nameLower || '').toLowerCase() === nameLower) {
           App.currentUser.isBanned = true;
           localStorage.removeItem('qp_session');
@@ -1699,44 +2016,45 @@
         return false;
       },
 
-      // BATCHES
-      batches: [
-        { id: 'batch_madhyamik_2026', name: 'Madhyamik 2026 Target Batch', category: 'Class 10', description: 'Comprehensive preparation for WB Board Madhyamik 2026 exams.' },
-        { id: 'batch_science_special', name: 'Science Specialists (P.Sci & L.Sci)', category: 'Science', description: 'Advanced problem sets, mock questions, and discussion.' },
-        { id: 'batch_maths_champions', name: 'Mathematics Champions Group', category: 'Maths', description: 'Daily theorem breakdowns and speed solving techniques.' }
-      ],
-
+      // BATCHES - REAL FIRESTORE, OWNER ONLY CONTROL
       async getBatches() {
         if (db) {
           try {
-            const snap = await db.collection('batches').get();
-            if (!snap.empty) {
-              const list = [];
-              snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-              this.batches = list;
-            }
+            const snap = await db.collection('batches').orderBy('createdAt', 'desc').get();
+            const list = [];
+            snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
+            this.batches = list;
           } catch(e) {}
         }
         return this.batches;
       },
 
       async addBatch(batch) {
-        const id = 'batch_' + Date.now();
-        const docData = { ...batch, id, createdAt: new Date().toISOString() };
-        this.batches.push(docData);
+        const docData = {
+          name: batch.name,
+          description: batch.description || '',
+          category: batch.category || 'Class 10',
+          createdBy: (App.currentUser && App.currentUser.name) || 'Admin',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          students: []
+        };
         if (db) {
           try {
-            await db.collection('batches').doc(id).set({
-              ...batch,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-          } catch(e) {}
+            const ref = await db.collection('batches').add(docData);
+            return { id: ref.id, ...docData };
+          } catch(e) {
+            console.warn("addBatch error:", e);
+          }
         }
-        return docData;
+        const localId = 'batch_' + Date.now();
+        this.batches.unshift({ id: localId, ...docData });
+        this.notify('batches');
+        return { id: localId, ...docData };
       },
 
       async deleteBatch(id) {
         this.batches = this.batches.filter(b => b.id !== id);
+        this.notify('batches');
         if (db) {
           try {
             await db.collection('batches').doc(id).delete();
@@ -1744,7 +2062,33 @@
         }
       },
 
-      // SOCIALS & CONFIG
+      // QUESTION BANKS
+      async addQuestionBank(item) {
+        const docData = {
+          ...item,
+          uploadedBy: (App.currentUser && App.currentUser.name) || 'Admin',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (db) {
+          try {
+            const ref = await db.collection('question_banks').add(docData);
+            return { id: ref.id, ...docData };
+          } catch(e) {}
+        }
+        return docData;
+      },
+
+      async deleteQuestionBank(id) {
+        this.questionBanks = this.questionBanks.filter(q => q.id !== id);
+        this.notify('questionBanks');
+        if (db) {
+          try {
+            await db.collection('question_banks').doc(id).delete();
+          } catch(e) {}
+        }
+      },
+
+      // SOCIALS & CONFIG (supportEmail editable by Owner)
       async getSocials() {
         const fallback = {
           telegram: 'https://t.me/UPDATES_01',
@@ -1763,6 +2107,15 @@
           } catch(e) {}
         }
         return fallback;
+      },
+
+      async saveSocials(socialData) {
+        if (db) {
+          try {
+            await db.collection('config').doc('socials').set(socialData, { merge: true });
+          } catch(e) {}
+        }
+        return socialData;
       },
 
       // USER LOGS
@@ -1820,7 +2173,6 @@
       }
     };
 
-    // Initialize HubStore
     HubStore.init();
 
     // ========================================================
@@ -1848,14 +2200,14 @@
       canManage() {
         if (!this.currentUser) return false;
         const role = (this.currentUser.role || '').toLowerCase();
-        return ['owner', 'co-founder', 'ceo', 'cto', 'admin'].includes(role);
+        return role === 'owner' || role === 'admin';
       },
 
-      // Security check: const isAdmin = currentUser.role === 'owner' || currentUser.role === 'admin'
+      // Security check: only Owner or Admin has admin visibility
       isAdminUser() {
         if (!this.currentUser) return false;
         const role = (this.currentUser.role || '').toLowerCase();
-        return role === 'owner' || role === 'admin' || role === 'co-founder' || role === 'ceo' || role === 'cto';
+        return role === 'owner' || role === 'admin';
       },
 
       isOwnerUser() {
@@ -1940,6 +2292,7 @@
         if (auth && typeof auth.onAuthStateChanged === 'function') {
           auth.onAuthStateChanged(async (user) => {
             if (user) {
+              initApp(user.uid);
               const email = user.email || '';
               const displayName = user.displayName || (user.phoneNumber ? 'Student_' + user.phoneNumber.slice(-4) : (email ? email.split('@')[0] : 'Student'));
               const nameLower = displayName.toLowerCase().replace(/[^a-z0-9_]/g, '_');
@@ -3046,7 +3399,8 @@
 
         this.updateHeaderAndDrawer();
         this.initUserDocSync();
-        this.switchDashboardTab(this.currentDashboardTab || 'pyqs');
+        this.updateSixthTabButton();
+        this.switchDashboardTab(this.currentDashboardTab || 'batches');
       },
 
       switchDashboardTab(tab) {
@@ -3070,7 +3424,8 @@
         `;
         lucide.createIcons();
 
-        if (tab === 'pyqs') this.loadPyqsTab();
+        if (tab === 'batches') this.loadBatchesTab();
+        else if (tab === 'pyqs') this.loadPyqsTab();
         else if (tab === 'notices') this.loadNoticesTab();
         else if (tab === 'mocks') this.loadMocksTab();
         else if (tab === 'chats') this.loadChatsTab();
@@ -3666,6 +4021,7 @@
       // ========================================================
       // 6. MOCKS TAB (CLEAN EMPTY DB + ADD/EDIT/DELETE)
       // ========================================================
+      currentMockView: 'tests', // 'tests' | 'attempts'
       loadMocksTab() {
         const container = document.getElementById('tab-container');
         if (!container) return;
@@ -3673,33 +4029,44 @@
         const canEdit = this.canManage();
 
         container.innerHTML = `
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-2">
             <div>
               <h2 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
                 <i data-lucide="file-check-2" class="w-4 h-4 text-yellow-400"></i>
                 MOCK EXAMINATIONS
               </h2>
-              <p class="text-[10px] text-slate-400">Curated Full Syllabus & Chapter Test Papers</p>
+              <p class="text-[10px] text-slate-400">Full Syllabus & Chapter Tests with Bot Evaluation</p>
             </div>
             <div class="flex items-center gap-1.5 flex-wrap">
-              <button onclick="App.openLeaderboardModal()" class="px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[11px] font-bold flex items-center gap-1 shadow-sm">
-                <i data-lucide="trophy" class="w-3.5 h-3.5"></i>
+              <button onclick="App.openLeaderboardModal()" class="px-2.5 py-1 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                <i data-lucide="trophy" class="w-3 h-3"></i>
                 Leaderboard
               </button>
-              <button onclick="App.openUploadAnswerSheetModal()" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-[11px] font-bold text-white flex items-center gap-1 shadow-md shadow-cyan-950/40 border border-cyan-400/30">
-                <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+              <button onclick="App.openUploadAnswerSheetModal()" class="px-2.5 py-1 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-[10px] font-bold text-white flex items-center gap-1 shadow-md shadow-cyan-950/40 border border-cyan-400/30">
+                <i data-lucide="camera" class="w-3 h-3"></i>
                 Upload Sheet
               </button>
               ${canEdit ? `
-                <button onclick="App.openAddMockModal()" class="px-2.5 py-1.5 rounded-xl btn-glow-gold text-[11px] font-bold text-white flex items-center gap-1">
-                  <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <button onclick="App.openAddMockModal()" class="px-2.5 py-1 rounded-xl btn-glow-gold text-[10px] font-bold text-white flex items-center gap-1">
+                  <i data-lucide="plus" class="w-3 h-3"></i>
                   Add Mock
                 </button>
               ` : ''}
             </div>
           </div>
 
-          <div id="mocks-list" class="space-y-2.5"></div>
+          <!-- MOCK SUBTABS: All Tests vs My Attempts -->
+          <div class="grid grid-cols-2 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 mb-3 text-xs font-bold">
+            <button onclick="App.switchMockView('tests')" id="mock-tab-tests" class="py-1.5 rounded-lg transition-all ${this.currentMockView === 'tests' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
+              Available Mock Tests
+            </button>
+            <button onclick="App.switchMockView('attempts')" id="mock-tab-attempts" class="py-1.5 rounded-lg transition-all ${this.currentMockView === 'attempts' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
+              My Attempts (Result / Checked)
+            </button>
+          </div>
+
+          <div id="mocks-list" class="space-y-2.5 ${this.currentMockView === 'tests' ? '' : 'hidden'}"></div>
+          <div id="mock-attempts-list" class="space-y-2.5 ${this.currentMockView === 'attempts' ? '' : 'hidden'}"></div>
           <div id="mock-modal-container"></div>
         `;
         lucide.createIcons();
@@ -3708,6 +4075,89 @@
           this.renderMocksList(list);
         });
         this.unsubs.push(unsub);
+
+        this.renderMyMockAttempts();
+      },
+
+      switchMockView(view) {
+        this.currentMockView = view;
+        const testBtn = document.getElementById('mock-tab-tests');
+        const attemptBtn = document.getElementById('mock-tab-attempts');
+        const testList = document.getElementById('mocks-list');
+        const attemptList = document.getElementById('mock-attempts-list');
+
+        if (view === 'tests') {
+          if (testBtn) testBtn.className = 'py-1.5 rounded-lg transition-all bg-amber-500 text-slate-950 font-black';
+          if (attemptBtn) attemptBtn.className = 'py-1.5 rounded-lg transition-all text-slate-400 hover:text-white';
+          if (testList) testList.classList.remove('hidden');
+          if (attemptList) attemptList.classList.add('hidden');
+        } else {
+          if (testBtn) testBtn.className = 'py-1.5 rounded-lg transition-all text-slate-400 hover:text-white';
+          if (attemptBtn) attemptBtn.className = 'py-1.5 rounded-lg transition-all bg-amber-500 text-slate-950 font-black';
+          if (testList) testList.classList.add('hidden');
+          if (attemptList) attemptList.classList.remove('hidden');
+          this.renderMyMockAttempts();
+        }
+      },
+
+      async renderMyMockAttempts() {
+        const container = document.getElementById('mock-attempts-list');
+        if (!container) return;
+
+        const uid = currentUid || (this.currentUser && (this.currentUser.uid || this.currentUser.nameLower)) || 'student';
+        let attempts = [];
+
+        if (db) {
+          try {
+            const snap = await db.collection('leaderboard').where('uid', '==', uid).get();
+            snap.forEach(doc => attempts.push({ id: doc.id, ...doc.data() }));
+          } catch(e) {}
+        }
+
+        // Fallback filter from local leaderboardMocks
+        if (attempts.length === 0 && HubStore.leaderboardMocks) {
+          attempts = HubStore.leaderboardMocks.filter(m => m.uid === uid || (m.gcName && this.currentUser && m.gcName.toLowerCase() === this.currentUser.nameLower));
+        }
+
+        if (attempts.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12 glass-card rounded-2xl border border-slate-800 text-xs text-slate-400 space-y-2">
+              <i data-lucide="clipboard-check" class="w-8 h-8 mx-auto text-slate-600"></i>
+              <p class="font-semibold text-slate-300">No mock test attempts recorded yet.</p>
+              <p class="text-[10px] text-slate-500">Solve any test and tap "Upload Sheet" to submit your copy to the evaluator bot!</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        container.innerHTML = attempts.map(a => {
+          const isChecked = a.status === 'checked';
+          return `
+            <div class="glass-card rounded-2xl p-4 border ${isChecked ? 'border-emerald-500/40 bg-emerald-950/15' : 'border-amber-500/40 bg-amber-950/15'} space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase ${isChecked ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}">
+                  ${isChecked ? '✓ Evaluated' : '⏳ Pending Checking'}
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">${formatDate(a.timestamp || a.createdAt)}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div>
+                  <h4 class="text-xs font-extrabold text-white">${escapeHtml(a.mockName || a.subject || 'Mock Test')}</h4>
+                  <p class="text-[10px] text-slate-400">Subject: <b class="text-slate-200">${escapeHtml(a.subject || 'General')}</b></p>
+                </div>
+                <div class="text-right">
+                  <div class="text-sm font-black font-mono ${isChecked ? 'text-emerald-300' : 'text-amber-300'}">
+                    ${isChecked ? `${a.marks} / ${a.totalMarks || 90}` : 'In Review'}
+                  </div>
+                  <div class="text-[9px] text-slate-400">${isChecked ? 'Final Marks' : 'Bot Evaluation'}</div>
+                </div>
+              </div>
+              ${a.remarks ? `<p class="text-[10px] text-slate-300 bg-slate-900/60 p-2 rounded-lg border border-slate-800">Teacher Remarks: ${escapeHtml(a.remarks)}</p>` : ''}
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
       },
 
       renderMocksList(list) {
@@ -4397,6 +4847,26 @@
           const botUsername = data.botUsername || botConfig?.username || 'Bot';
           SoundSystem.success();
 
+          // 1. Record attempt in collection 'leaderboard' with status 'pending'
+          if (db) {
+            try {
+              const uid = currentUid || (this.currentUser && (this.currentUser.uid || this.currentUser.nameLower)) || 'student';
+              await db.collection('leaderboard').add({
+                uid: uid,
+                gcName: gcName,
+                mockName: `${subject} Mock Examination`,
+                subject: subject,
+                marks: 0,
+                totalMarks: 90,
+                status: 'pending',
+                batchId: (this.currentUser && this.currentUser.batch) || 'General',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            } catch(e) {
+              console.warn("Attempt logging error:", e);
+            }
+          }
+
           // Show success: "Answer sent to @botUsername for checking"
           showToast(`Answer sent to @${botUsername} for checking`, 'success', 6000);
 
@@ -4541,7 +5011,7 @@
           box.innerHTML = `
             <div class="text-center py-12 text-xs text-slate-400">
               <i data-lucide="messages-square" class="w-8 h-8 mx-auto mb-2 text-slate-600"></i>
-              <p class="font-semibold text-slate-300">No chat messages yet.</p>
+              <p class="font-semibold text-slate-300">No chats - start new</p>
               <p class="text-[10px] text-slate-500 mt-0.5">Start the live discussion with fellow students and staff!</p>
             </div>
           `;
@@ -5296,14 +5766,26 @@
         this.currentUser.points = (this.currentUser.points || this.currentUser.xp || 25) + 5;
         this.currentUser.xp = this.currentUser.points;
 
-        // Persist to localStorage and Firestore
+        // Persist to localStorage and Firestore leaderboard_points
         try {
           localStorage.setItem('qp_user', JSON.stringify(this.currentUser));
+          const uid = currentUid || (this.currentUser && (this.currentUser.uid || this.currentUser.nameLower)) || 'student';
           if (db) {
-            const uidKey = this.currentUser.uid || this.currentUser.nameLower;
-            db.collection('users').doc(uidKey).set({
+            db.collection('users').doc(uid).set({
               streak: this.currentUser.streak,
               points: this.currentUser.points
+            }, { merge: true }).catch(() => {});
+
+            // Update collection 'leaderboard_points'
+            db.collection('leaderboard_points').doc(uid).set({
+              uid: uid,
+              gcName: this.currentUser.name || 'Student',
+              points: firebase.firestore.FieldValue.increment(5),
+              daily: firebase.firestore.FieldValue.increment(5),
+              weekly: firebase.firestore.FieldValue.increment(5),
+              monthly: firebase.firestore.FieldValue.increment(5),
+              batchId: this.currentUser.batch || 'General',
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true }).catch(() => {});
           }
         } catch(e) {}
@@ -5373,25 +5855,55 @@
       // ========================================================
       // 11. LEADERBOARD SYSTEM (Daily / Weekly / Monthly / Subjects)
       // ========================================================
+      leaderboardTab: 'points', // 'points' | 'mocks'
       leaderboardFilter: 'weekly',
-      leaderboardSubject: 'all',
-      openLeaderboardModal(timeframe, subject) {
+      leaderboardSubject: 'All',
+      leaderboardBatch: 'All',
+
+      async openLeaderboardModal(tab, timeframe, subject, batch) {
         SoundSystem.pop();
+        if (tab) this.leaderboardTab = tab;
         if (timeframe) this.leaderboardFilter = timeframe;
         if (subject) this.leaderboardSubject = subject;
+        if (batch) this.leaderboardBatch = batch;
 
         const modal = document.getElementById('extra-modal-container');
         if (!modal) return;
 
-        // Sample / live students ranked by points
-        const mockRanks = [
-          { rank: 1, name: 'Sayan Chatterjee', batch: 'Madhyamik 2026', points: 340, badge: '🥇' },
-          { rank: 2, name: 'Sneha Mondal', batch: 'Science Special', points: 295, badge: '🥈' },
-          { rank: 3, name: 'Anirban Roy', batch: 'Maths Group', points: 260, badge: '🥉' },
-          { rank: 4, name: 'Priya Das', batch: 'Madhyamik 2026', points: 215, badge: '4' },
-          { rank: 5, name: 'Rohan Sen', batch: 'General', points: 190, badge: '5' },
-          { rank: 6, name: 'Debjit Paul', batch: 'Science Special', points: 175, badge: '6' }
-        ];
+        let ranks = [];
+        if (this.leaderboardTab === 'points') {
+          // 1. Points Leaderboard: collection 'leaderboard_points' {uid, gcName, points, daily, weekly, monthly, batchId}
+          if (db) {
+            try {
+              const snap = await db.collection("leaderboard_points").orderBy("points", "desc").limit(50).get();
+              snap.forEach(doc => ranks.push({ id: doc.id, ...doc.data() }));
+            } catch(e) {}
+          }
+          if (ranks.length === 0 && HubStore.leaderboardPoints) {
+            ranks = [...HubStore.leaderboardPoints];
+          }
+        } else {
+          // 2. Mock Test Leaderboard: collection 'leaderboard' {uid, gcName, mockId, subject, marks, totalMarks, status, batchId}
+          if (db) {
+            try {
+              const snap = await db.collection("leaderboard").orderBy("marks", "desc").limit(50).get();
+              snap.forEach(doc => ranks.push({ id: doc.id, ...doc.data() }));
+            } catch(e) {}
+          }
+          if (ranks.length === 0 && HubStore.leaderboardMocks) {
+            ranks = [...HubStore.leaderboardMocks];
+          }
+        }
+
+        // Apply filters
+        if (this.leaderboardSubject !== 'All') {
+          ranks = ranks.filter(r => (r.subject || '').toLowerCase() === this.leaderboardSubject.toLowerCase());
+        }
+        if (this.leaderboardBatch !== 'All') {
+          ranks = ranks.filter(r => (r.batchId || r.batch || '').toLowerCase() === this.leaderboardBatch.toLowerCase());
+        }
+
+        const myPoints = this.currentUser?.points || 0;
 
         modal.innerHTML = `
           <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
@@ -5405,7 +5917,7 @@
                   </div>
                   <div>
                     <h3 class="text-sm font-black text-white font-display tracking-wider uppercase">ACADEMIC LEADERBOARD</h3>
-                    <p class="text-[10px] text-slate-400">Top Rankers across Mocks & Community</p>
+                    <p class="text-[10px] text-slate-400">100% Real Scores • Starts from 0</p>
                   </div>
                 </div>
                 <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
@@ -5413,38 +5925,58 @@
                 </button>
               </div>
 
-              <!-- Timeframe Tabs -->
-              <div class="grid grid-cols-3 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 text-[11px] font-bold">
-                <button onclick="App.openLeaderboardModal('daily')" class="py-1.5 rounded-lg transition-all ${this.leaderboardFilter === 'daily' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
-                  Daily
+              <!-- Two Leaderboard Categories -->
+              <div class="grid grid-cols-2 gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 text-xs font-bold">
+                <button onclick="App.openLeaderboardModal('points')" class="py-1.5 rounded-lg transition-all ${this.leaderboardTab === 'points' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
+                  ⭐ Points Leaderboard
                 </button>
-                <button onclick="App.openLeaderboardModal('weekly')" class="py-1.5 rounded-lg transition-all ${this.leaderboardFilter === 'weekly' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
-                  Weekly
-                </button>
-                <button onclick="App.openLeaderboardModal('monthly')" class="py-1.5 rounded-lg transition-all ${this.leaderboardFilter === 'monthly' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
-                  Monthly
+                <button onclick="App.openLeaderboardModal('mocks')" class="py-1.5 rounded-lg transition-all ${this.leaderboardTab === 'mocks' ? 'bg-amber-500 text-slate-950 font-black' : 'text-slate-400 hover:text-white'}">
+                  🎯 Mock Test Marks
                 </button>
               </div>
 
-              <!-- Ranking List -->
-              <div class="space-y-2 pt-1">
-                ${mockRanks.map(item => `
-                  <div class="p-2.5 rounded-xl ${item.rank <= 3 ? 'bg-amber-950/25 border border-yellow-500/35' : 'bg-slate-900/70 border border-slate-800'} flex items-center justify-between gap-2.5">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <div class="w-7 h-7 rounded-lg ${item.rank === 1 ? 'bg-yellow-500/20 text-yellow-300' : (item.rank === 2 ? 'bg-slate-300/20 text-slate-200' : (item.rank === 3 ? 'bg-amber-700/20 text-amber-400' : 'bg-slate-800 text-slate-400'))} flex items-center justify-center font-black text-xs flex-shrink-0">
-                        ${item.badge}
-                      </div>
-                      <div class="min-w-0">
-                        <div class="text-xs font-bold text-white truncate">${escapeHtml(item.name)}</div>
-                        <div class="text-[9px] text-slate-400 font-medium truncate">${escapeHtml(item.batch)}</div>
-                      </div>
-                    </div>
-                    <div class="text-right flex-shrink-0">
-                      <div class="text-xs font-black text-amber-300 font-mono">${item.points} PTS</div>
-                      <div class="text-[9px] text-emerald-400 font-semibold">Active</div>
-                    </div>
+              <!-- Filters: Timeframe -->
+              <div class="flex items-center justify-between gap-1 text-[11px]">
+                <div class="flex gap-1 flex-1">
+                  <button onclick="App.openLeaderboardModal('${this.leaderboardTab}', 'daily')" class="flex-1 py-1 rounded-lg border text-center font-bold ${this.leaderboardFilter === 'daily' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-400'}">Daily</button>
+                  <button onclick="App.openLeaderboardModal('${this.leaderboardTab}', 'weekly')" class="flex-1 py-1 rounded-lg border text-center font-bold ${this.leaderboardFilter === 'weekly' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-400'}">Weekly</button>
+                  <button onclick="App.openLeaderboardModal('${this.leaderboardTab}', 'monthly')" class="flex-1 py-1 rounded-lg border text-center font-bold ${this.leaderboardFilter === 'monthly' ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-slate-800 bg-slate-900 text-slate-400'}">Monthly</button>
+                </div>
+              </div>
+
+              <!-- Ranking List (NO DUMMY DATA - REAL ZERO) -->
+              <div class="space-y-2 pt-1 min-h-[160px]">
+                ${ranks.length === 0 ? `
+                  <div class="text-center py-10 glass-card rounded-2xl border border-slate-800 text-xs text-slate-400 space-y-1.5">
+                    <i data-lucide="award" class="w-8 h-8 mx-auto text-slate-600"></i>
+                    <p class="font-bold text-slate-300">No rankings yet - start practicing to rank #1</p>
+                    <p class="text-[10px] text-slate-500">Solve daily streaks 🔥 or submit mock answers to climb the board!</p>
                   </div>
-                `).join('')}
+                ` : ranks.map((item, idx) => {
+                  const rankNum = idx + 1;
+                  let badge = rankNum === 1 ? '🥇' : (rankNum === 2 ? '🥈' : (rankNum === 3 ? '🥉' : `${rankNum}`));
+                  const scoreDisplay = this.leaderboardTab === 'points' 
+                    ? `${item.points || 0} PTS`
+                    : `${item.marks || 0} / ${item.totalMarks || 90} Marks`;
+
+                  return `
+                    <div class="p-2.5 rounded-xl ${rankNum <= 3 ? 'bg-amber-950/25 border border-yellow-500/35' : 'bg-slate-900/70 border border-slate-800'} flex items-center justify-between gap-2.5">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-7 h-7 rounded-lg ${rankNum === 1 ? 'bg-yellow-500/20 text-yellow-300' : (rankNum === 2 ? 'bg-slate-300/20 text-slate-200' : (rankNum === 3 ? 'bg-amber-700/20 text-amber-400' : 'bg-slate-800 text-slate-400'))} flex items-center justify-center font-black text-xs flex-shrink-0">
+                          ${badge}
+                        </div>
+                        <div class="min-w-0">
+                          <div class="text-xs font-bold text-white truncate">${escapeHtml(item.gcName || 'Student')}</div>
+                          <div class="text-[9px] text-slate-400 font-medium truncate">${escapeHtml(item.subject || item.batchId || item.batch || 'Class 10')}</div>
+                        </div>
+                      </div>
+                      <div class="text-right flex-shrink-0">
+                        <div class="text-xs font-black text-amber-300 font-mono">${scoreDisplay}</div>
+                        <div class="text-[9px] text-emerald-400 font-semibold">${item.status === 'pending' ? 'Reviewing' : 'Active'}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
               </div>
 
               <!-- Current User Rank Banner -->
@@ -5453,7 +5985,7 @@
                   <span class="w-6 h-6 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-[10px]">YOU</span>
                   <span class="font-bold text-white">${escapeHtml(this.currentUser?.name || 'Student')}</span>
                 </div>
-                <span class="font-black text-amber-300">${this.currentUser?.points || this.currentUser?.xp || 25} PTS</span>
+                <span class="font-black text-amber-300">${myPoints} PTS</span>
               </div>
             </div>
           </div>
@@ -5941,6 +6473,7 @@
       },
 
       // ========================================================
+      // ========================================================
       // 16. HELP & SUPPORT SYSTEM (Support Ticket + /api/support)
       // ========================================================
       async openSupportModal() {
@@ -5950,6 +6483,16 @@
 
         const socials = await HubStore.getSocials();
         const supportEmail = socials.supportEmail || 'support@qp2hub.com';
+        const uid = currentUid || (this.currentUser && (this.currentUser.uid || this.currentUser.nameLower)) || 'student';
+
+        // Fetch My Tickets
+        let myTickets = [];
+        if (db) {
+          try {
+            const snap = await db.collection("supportTickets").where("uid", "==", uid).get();
+            snap.forEach(doc => myTickets.push({ id: doc.id, ...doc.data() }));
+          } catch(e) {}
+        }
 
         modal.innerHTML = `
           <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
@@ -5963,7 +6506,7 @@
                   </div>
                   <div>
                     <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">HELP & SUPPORT</h3>
-                    <p class="text-[10px] text-slate-400">Official Assistance & Ticket Raise</p>
+                    <p class="text-[10px] text-slate-400">Official Assistance & Support Tickets</p>
                   </div>
                 </div>
                 <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
@@ -5977,41 +6520,57 @@
                   <span class="text-[10px] font-bold text-slate-400 uppercase">DIRECT EMAIL SUPPORT</span>
                   <div class="text-xs font-bold text-emerald-300 font-mono mt-0.5">${escapeHtml(supportEmail)}</div>
                 </div>
-                <a href="mailto:${escapeHtml(supportEmail)}" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 text-[10px] font-bold hover:bg-emerald-500/30">
-                  Email Us
-                </a>
+                <div class="flex items-center gap-1.5">
+                  ${this.isOwnerUser() ? `
+                    <button onclick="App.openManageSocialsModal()" class="px-2 py-1 rounded-lg bg-slate-800 text-amber-300 border border-slate-700 text-[10px] font-bold">
+                      Edit
+                    </button>
+                  ` : ''}
+                  <a href="mailto:${escapeHtml(supportEmail)}" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-200 border border-emerald-500/40 text-[10px] font-bold hover:bg-emerald-500/30">
+                    Email Us
+                  </a>
+                </div>
               </div>
 
-              <!-- Ticket Raise Form -->
-              <div class="space-y-2.5 text-xs">
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Issue Category</label>
-                  <select id="ticket-category" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
-                    <option value="Mock Test & Answer Sheet">Mock Test & Answer Sheet Evaluation</option>
-                    <option value="Login & Persistence">Login & Account Issue</option>
-                    <option value="Question Paper / Drive Link">Question Paper / PYQ Request</option>
-                    <option value="Bug Report">Technical Bug Report</option>
-                    <option value="Other">General Inquiry / Feedback</option>
-                  </select>
+              <!-- Raise Ticket Action Button -->
+              <button onclick="App.openRaiseTicketModal()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-2 shadow-lg">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i>
+                <span>Raise Ticket</span>
+              </button>
+
+              <!-- My Tickets List -->
+              <div class="space-y-2 pt-2 border-t border-slate-800/80">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-xs font-black text-white flex items-center gap-1.5 uppercase font-display">
+                    <i data-lucide="ticket" class="w-3.5 h-3.5 text-cyan-400"></i>
+                    My Raised Tickets (${myTickets.length})
+                  </h4>
+                  <span class="text-[9px] text-slate-400 font-mono">UID: ${escapeHtml(uid.slice(0, 8))}</span>
                 </div>
 
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subject</label>
-                  <input id="ticket-subject" type="text" placeholder="e.g. Maths mock test answer sheet not evaluated" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400">
+                <div class="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                  ${myTickets.length === 0 ? `
+                    <div class="text-center py-6 glass-card rounded-xl border border-slate-800 text-xs text-slate-400">
+                      <p>No active support tickets.</p>
+                      <p class="text-[10px] text-slate-500 mt-0.5">Click "Raise Ticket" above if you need help from our staff.</p>
+                    </div>
+                  ` : myTickets.map(t => {
+                    const isOpen = (t.status || 'open') === 'open';
+                    return `
+                      <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                        <div class="flex items-center justify-between text-xs">
+                          <span class="font-bold text-white truncate flex-1 pr-2">${escapeHtml(t.subject || 'Support Ticket')}</span>
+                          <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase ${isOpen ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
+                            ${escapeHtml(t.status || 'open')}
+                          </span>
+                        </div>
+                        <p class="text-[10px] text-slate-300 line-clamp-2 leading-relaxed">${escapeHtml(t.message || '')}</p>
+                        <div class="text-[9px] text-slate-500 font-mono pt-1">${formatDate(t.timestamp || t.createdAt)}</div>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
-
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Message & Details</label>
-                  <textarea id="ticket-message" rows="3" placeholder="Describe the issue in detail..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"></textarea>
-                </div>
-
-                <button id="ticket-submit-btn" onclick="App.submitSupportTicket()" class="w-full py-2.5 rounded-xl btn-glow-indigo text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg">
-                  <i data-lucide="send" class="w-4 h-4"></i>
-                  <span>Submit Support Ticket</span>
-                </button>
               </div>
-
-              <div id="ticket-result-box" class="hidden"></div>
 
             </div>
           </div>
@@ -6019,85 +6578,615 @@
         lucide.createIcons();
       },
 
+      openRaiseTicketModal() {
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[390px] space-y-3.5 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                  <i data-lucide="life-buoy" class="w-4 h-4 text-emerald-400"></i>
+                  Raise Support Ticket
+                </h3>
+                <button onclick="App.openSupportModal()" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Subject</label>
+                <input id="modal-ticket-subject" type="text" placeholder="e.g. Maths question paper answer checking" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Describe Your Issue / Question</label>
+                <textarea id="modal-ticket-message" rows="4" placeholder="Enter your query in detail for the support team..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400"></textarea>
+              </div>
+
+              <button id="modal-ticket-btn" onclick="App.submitSupportTicket()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-2 shadow-lg">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>SUBMIT TICKET TO SUPPORT BOT</span>
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
       async submitSupportTicket() {
-        const cat = document.getElementById('ticket-category')?.value;
-        const subject = document.getElementById('ticket-subject')?.value.trim();
-        const message = document.getElementById('ticket-message')?.value.trim();
+        const subject = (document.getElementById('modal-ticket-subject') || document.getElementById('ticket-subject'))?.value.trim();
+        const message = (document.getElementById('modal-ticket-message') || document.getElementById('ticket-message'))?.value.trim();
+        const uid = currentUid || (this.currentUser && (this.currentUser.uid || this.currentUser.nameLower)) || 'student';
+        const gcName = (this.currentUser && this.currentUser.name) || 'Student';
+        const email = (this.currentUser && (this.currentUser.gmail || this.currentUser.email)) || 'user@qp2hub.com';
 
         if (!subject || !message) {
-          SoundSystem.error();
           showToast('Subject and Message are required', 'error');
           return;
         }
 
-        const btn = document.getElementById('ticket-submit-btn');
+        const btn = document.getElementById('modal-ticket-btn') || document.getElementById('ticket-submit-btn');
         if (btn) {
           btn.disabled = true;
-          btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Submitting Ticket...`;
+          btn.innerHTML = `<span class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Submitting...`;
         }
 
         const ticketData = {
-          name: this.currentUser?.name || 'Student',
-          email: this.currentUser?.gmail || this.currentUser?.email || '',
-          phone: this.currentUser?.phone || '',
-          role: this.currentUser?.role || 'Student',
-          category: cat,
+          uid: uid,
+          email: email,
+          gcName: gcName,
           subject: subject,
           message: message,
           status: 'open',
           createdAt: new Date().toISOString()
         };
 
-        // 1. Store in Firestore collection 'supportTickets'
+        // 1. Add to Firestore collection "supportTickets"
         if (db) {
           try {
-            await db.collection('supportTickets').add({
+            await db.collection("supportTickets").add({
               ...ticketData,
               timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
-          } catch(e) {}
+          } catch(e) {
+            console.warn("Firestore supportTickets error:", e);
+          }
         }
 
-        // 2. Call /api/support
+        // 2. POST to /api/support.js
         try {
-          const resp = await fetch('/api/support', {
+          await fetch('/api/support.js', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(ticketData)
           });
-          const resText = await resp.text();
-          let data;
-          try { data = JSON.parse(resText); } catch(e) { data = { success: true }; }
         } catch(e) {
-          console.warn("Support endpoint call notice:", e);
+          console.warn("API support forward notice:", e);
         }
 
         SoundSystem.success();
-        showToast('Support ticket submitted successfully! Ticket ID #TKT-' + Math.floor(Math.random() * 8999 + 1000), 'success', 5000);
-        
-        const resultBox = document.getElementById('ticket-result-box');
-        if (resultBox) {
-          resultBox.classList.remove('hidden');
-          resultBox.innerHTML = `
-            <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-xs space-y-1">
-              <div class="font-bold flex items-center gap-1.5 text-emerald-300">
-                <i data-lucide="check-circle" class="w-4 h-4"></i>
-                Ticket Logged & Sent to Support Bot!
-              </div>
-              <p class="text-[10px] text-slate-300">Our support coordinators will review your ticket and reply to your registered contact.</p>
-            </div>
-          `;
-          lucide.createIcons();
-        }
-
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 text-emerald-300"></i> Submitted`;
-          lucide.createIcons();
-        }
+        showToast('Ticket raised successfully! Forwarded to support bot.', 'success');
+        this.openSupportModal();
       },
 
       // ========================================================
+      // DRAWER ADDITIONAL MODALS
+      // ========================================================
+      openTestSeriesModal() {
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-gold rounded-2xl p-5 w-full max-w-[400px] space-y-4 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center font-black">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">TEST SERIES HUB</h3>
+                    <p class="text-[10px] text-slate-400">Mock Tests & Board PYQs</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <button onclick="App.switchDashboardTab('mocks'); document.getElementById('extra-modal-container').innerHTML='';" class="p-3.5 rounded-xl bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 text-left transition-all">
+                  <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2">
+                    <i data-lucide="file-check-2" class="w-4 h-4"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-white">Mock Tests</h4>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Solve full syllabus & chapter tests</p>
+                </button>
+
+                <button onclick="App.switchDashboardTab('pyqs'); document.getElementById('extra-modal-container').innerHTML='';" class="p-3.5 rounded-xl bg-indigo-950/30 hover:bg-indigo-900/40 border border-indigo-500/40 text-left transition-all">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-white">Board PYQs</h4>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Previous year official papers</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      openLibraryModal() {
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        const qbs = HubStore.questionBanks || [];
+        const canEdit = this.canManage();
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-[420px] space-y-3.5 my-auto max-h-[92vh] overflow-y-auto no-scrollbar shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center font-black">
+                    <i data-lucide="book-marked" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">LIBRARY & QUESTION BANK</h3>
+                    <p class="text-[10px] text-slate-400">Curated Problems & Reference PDFs</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              ${canEdit ? `
+                <button onclick="App.openUploadQuestionBankModal()" class="w-full py-2 rounded-xl btn-glow-gold text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                  <span>+ Upload Question Bank to Library</span>
+                </button>
+              ` : ''}
+
+              <div class="space-y-2">
+                ${qbs.length === 0 ? `
+                  <div class="text-center py-8 glass-card rounded-xl border border-slate-800 text-xs text-slate-400">
+                    <p>No Question Bank documents added yet.</p>
+                  </div>
+                ` : qbs.map(q => `
+                  <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-2">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-cyan-500/20 text-cyan-300">${escapeHtml(q.subject || 'All')}</span>
+                        <h4 class="text-xs font-bold text-white truncate">${escapeHtml(q.title)}</h4>
+                      </div>
+                      <p class="text-[10px] text-slate-400 mt-0.5 truncate">${escapeHtml(q.totalQuestions || 'Question Bank')}</p>
+                    </div>
+                    <a href="${escapeHtml(q.fileUrl || '#')}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-cyan-600/30 text-cyan-200 border border-cyan-500/40 text-[10px] font-bold">
+                      Open
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      openDownloadsModal() {
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[400px] space-y-3.5 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="download" class="w-5 h-5 text-blue-400"></i>
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">OFFLINE DOWNLOADS</h3>
+                    <p class="text-[10px] text-slate-400">Cached PYQs & Answer Sheets</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+                <div class="flex items-center gap-2 font-bold text-white">
+                  <i data-lucide="wifi-off" class="w-4 h-4 text-cyan-400"></i>
+                  Offline Revision Mode
+                </div>
+                <p class="text-[11px] text-slate-400">All PDF papers opened from Drive or Saved Question Banks remain cached in your browser storage for easy access without consuming mobile data.</p>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      openAboutModal() {
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[400px] space-y-3.5 my-auto shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <img src="/logo.png" alt="QP Logo" class="w-7 h-7 rounded-full">
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">ABOUT QP 2.0 HUB</h3>
+                    <p class="text-[10px] text-slate-400">Empowering Academic Excellence</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="text-[11px] text-slate-300 space-y-2 leading-relaxed">
+                <p><b class="text-white">QP 2.0 HUB</b> is West Bengal's dedicated premier learning ecosystem designed for Class 9-12 and Madhyamik board examinees.</p>
+                <p>• Verified Board Question Papers & Answer Keys.</p>
+                <p>• Automated Subject-wise Telegram Evaluator Bots for handwritten sheet grading.</p>
+                <p>• Real-time Community Adda and focused Study Batches with zero fluff.</p>
+                <p class="pt-1 text-slate-400 font-mono text-[10px]">Ecosystem Founders: Haider (Owner) & Leadership Team</p>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      openAppTourModal() {
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-cyan rounded-2xl p-5 w-full max-w-[420px] space-y-3.5 my-auto shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-300 border border-pink-500/40 flex items-center justify-center font-black">
+                    <i data-lucide="compass" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">APP GUIDE TOUR</h3>
+                    <p class="text-[10px] text-slate-400">How to Navigate QP 2.0 HUB</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="space-y-2 text-xs text-slate-300">
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex gap-2.5">
+                  <span class="font-black text-cyan-400">1.</span>
+                  <div><b class="text-white">Batches Tab:</b> Join study circles and access exclusive Question Banks.</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex gap-2.5">
+                  <span class="font-black text-indigo-400">2.</span>
+                  <div><b class="text-white">PYQ Tab:</b> Filter board question papers by subject and year.</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex gap-2.5">
+                  <span class="font-black text-amber-400">3.</span>
+                  <div><b class="text-white">Mocks & Bot Checking:</b> Take tests and snap photos of written sheets for Telegram bot evaluation.</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex gap-2.5">
+                  <span class="font-black text-emerald-400">4.</span>
+                  <div><b class="text-white">Community Adda:</b> Live discussions synchronized across devices with no dummy users.</div>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex gap-2.5">
+                  <span class="font-black text-orange-400">5.</span>
+                  <div><b class="text-white">Daily Streaks 🔥 & Points ⭐:</b> Claim daily check-ins to climb the live leaderboard.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      // ADMIN ONLY MODALS
+      openBannedUsersModal() {
+        if (!this.canManage()) return;
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        const bannedList = Array.from(HubStore.accounts.values()).filter(a => a.isBanned === true);
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card rounded-2xl p-5 w-full max-w-[420px] space-y-3.5 my-auto shadow-2xl border border-rose-500/40">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="user-x" class="w-5 h-5 text-rose-400"></i>
+                  <div>
+                    <h3 class="text-xs font-black text-rose-300 font-display tracking-wider uppercase">BANNED USERS MANAGEMENT</h3>
+                    <p class="text-[10px] text-slate-400">Admin Control Center</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
+                ${bannedList.length === 0 ? `
+                  <div class="text-center py-6 text-xs text-slate-400">No banned accounts.</div>
+                ` : bannedList.map(u => `
+                  <div class="p-2.5 rounded-xl bg-slate-900/80 border border-rose-500/30 flex items-center justify-between">
+                    <div>
+                      <div class="text-xs font-bold text-white">${escapeHtml(u.name || u.nameLower)}</div>
+                      <div class="text-[9px] text-rose-300 font-mono">@${escapeHtml(u.nameLower)}</div>
+                    </div>
+                    <button onclick="App.unbanUser('${u.nameLower}'); App.openBannedUsersModal();" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px]">
+                      Unban
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      openMakeAdminModal() {
+        if (!this.canManage()) return;
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[390px] space-y-3.5 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                  <i data-lucide="user-plus" class="w-4 h-4 text-blue-400"></i>
+                  Promote User to Admin
+                </h3>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">GC Name / Username</label>
+                <input id="make-admin-input" type="text" placeholder="Enter exact GC Name..." class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-400">
+              </div>
+
+              <button onclick="App.submitMakeAdmin()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                PROMOTE TO ADMIN
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async submitMakeAdmin() {
+        const name = document.getElementById('make-admin-input')?.value.trim();
+        if (!name) {
+          showToast('Please enter a username', 'error');
+          return;
+        }
+        await HubStore.makeAdmin(name);
+        SoundSystem.success();
+        showToast(`User @${name} is now an Admin!`, 'success');
+        document.getElementById('extra-modal-container').innerHTML = '';
+      },
+
+      async openManageSocialsModal() {
+        if (!this.canManage()) return;
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        const socials = await HubStore.getSocials();
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3.5 overflow-y-auto">
+            <div class="glass-card neon-indigo rounded-2xl p-5 w-full max-w-[420px] space-y-3.5 my-auto max-h-[92vh] overflow-y-auto no-scrollbar shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="settings" class="w-5 h-5 text-purple-400"></i>
+                  <div>
+                    <h3 class="text-xs font-black text-white font-display tracking-wider uppercase">MANAGE SOCIALS & SUPPORT EMAIL</h3>
+                    <p class="text-[10px] text-slate-400">Owner Config Center (config/socials)</p>
+                  </div>
+                </div>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div class="space-y-2.5 text-xs">
+                <div>
+                  <label class="block text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-1">Official Support Email</label>
+                  <input id="cfg-support-email" type="email" value="${escapeHtml(socials.supportEmail || 'support@qp2hub.com')}" class="w-full bg-[#0d1029] border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Official Telegram URL</label>
+                  <input id="cfg-telegram" type="url" value="${escapeHtml(socials.telegram || 'https://t.me/UPDATES_01')}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">YouTube Channel URL</label>
+                  <input id="cfg-youtube" type="url" value="${escapeHtml(socials.youtube || '')}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Instagram URL</label>
+                  <input id="cfg-instagram" type="url" value="${escapeHtml(socials.instagram || '')}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">WhatsApp Group URL</label>
+                  <input id="cfg-whatsapp" type="url" value="${escapeHtml(socials.whatsapp || '')}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                </div>
+
+                <button onclick="App.saveSocialsConfig()" class="w-full btn-glow-indigo py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                  <i data-lucide="check" class="w-4 h-4"></i>
+                  SAVE SOCIALS & SUPPORT EMAIL
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async saveSocialsConfig() {
+        const supportEmail = document.getElementById('cfg-support-email')?.value.trim();
+        const telegram = document.getElementById('cfg-telegram')?.value.trim();
+        const youtube = document.getElementById('cfg-youtube')?.value.trim();
+        const instagram = document.getElementById('cfg-instagram')?.value.trim();
+        const whatsapp = document.getElementById('cfg-whatsapp')?.value.trim();
+
+        await HubStore.saveSocials({
+          supportEmail: supportEmail || 'support@qp2hub.com',
+          telegram: telegram || 'https://t.me/UPDATES_01',
+          youtube: youtube || '',
+          instagram: instagram || '',
+          whatsapp: whatsapp || ''
+        });
+
+        SoundSystem.success();
+        showToast('Socials and Support Email updated!', 'success');
+        document.getElementById('extra-modal-container').innerHTML = '';
+      },
+
+      // CONFIGURE 6TH TAB
+      openConfigureSixthTabModal() {
+        if (!this.canManage()) return;
+        SoundSystem.pop();
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        const cfg = HubStore.appConfig || { sixthTabName: 'Coming Soon', sixthTabEnabled: false, sixthTabLink: '' };
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-gold rounded-2xl p-5 w-full max-w-[390px] space-y-3.5 shadow-2xl">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+                <h3 class="text-sm font-extrabold text-white flex items-center gap-1.5 font-display">
+                  <i data-lucide="layout" class="w-4 h-4 text-amber-400"></i>
+                  Configure 6th Bottom Nav Tab
+                </h3>
+                <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="text-slate-400 hover:text-white p-1">
+                  <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">6th Tab Name (e.g. Doubt Box, Live, Quiz)</label>
+                <input id="cfg-sixth-name" type="text" value="${escapeHtml(cfg.sixthTabName || 'Coming Soon')}" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-300 mb-1">Custom Action Link (URL or empty for popup)</label>
+                <input id="cfg-sixth-link" type="text" value="${escapeHtml(cfg.sixthTabLink || '')}" placeholder="https://... or leave empty" class="w-full bg-[#0d1029] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400">
+              </div>
+
+              <div class="flex items-center gap-2 pt-1">
+                <input id="cfg-sixth-enabled" type="checkbox" ${cfg.sixthTabEnabled ? 'checked' : ''} class="w-4 h-4 rounded text-amber-500">
+                <label for="cfg-sixth-enabled" class="text-xs font-bold text-white">Enable Custom Function / Link</label>
+              </div>
+
+              <button onclick="App.saveSixthTabConfig()" class="w-full btn-glow-gold py-2.5 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-1.5 mt-2">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                UPDATE 6TH TAB
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+      async saveSixthTabConfig() {
+        const name = document.getElementById('cfg-sixth-name')?.value.trim();
+        const link = document.getElementById('cfg-sixth-link')?.value.trim();
+        const enabled = document.getElementById('cfg-sixth-enabled')?.checked || false;
+
+        const newConfig = {
+          sixthTabName: name || 'Coming Soon',
+          sixthTabLink: link || '',
+          sixthTabEnabled: enabled
+        };
+
+        if (db) {
+          try {
+            await db.collection("config").doc("appConfig").set(newConfig, { merge: true });
+          } catch(e) {}
+        }
+        HubStore.appConfig = newConfig;
+        this.updateSixthTabButton();
+
+        SoundSystem.success();
+        showToast('6th Tab updated!', 'success');
+        document.getElementById('extra-modal-container').innerHTML = '';
+      },
+
+      updateSixthTabButton() {
+        const label = document.getElementById('nav-sixth-tab-label');
+        if (label) {
+          label.textContent = (HubStore.appConfig && HubStore.appConfig.sixthTabName) || 'Coming Soon';
+        }
+      },
+
+      handleSixthTabClick() {
+        SoundSystem.pop();
+        const cfg = HubStore.appConfig || { sixthTabName: 'Coming Soon', sixthTabEnabled: false, sixthTabLink: '' };
+
+        if (cfg.sixthTabEnabled && cfg.sixthTabLink) {
+          try {
+            window.open(cfg.sixthTabLink, '_blank');
+          } catch(e) {}
+          return;
+        }
+
+        // Show Coming Soon popup
+        const modal = document.getElementById('extra-modal-container');
+        if (!modal) return;
+
+        modal.innerHTML = `
+          <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+            <div class="glass-card neon-gold rounded-2xl p-6 w-full max-w-[360px] text-center space-y-3 shadow-2xl">
+              <div class="w-12 h-12 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center mx-auto text-xl font-black">
+                ✨
+              </div>
+              <h3 class="text-base font-black text-white font-display tracking-wide uppercase">
+                ${escapeHtml(cfg.sixthTabName || 'COMING SOON')}
+              </h3>
+              <p class="text-xs text-slate-300 leading-relaxed">
+                This academic feature is currently under active development by our education council. Stay tuned for official bulletins!
+              </p>
+              <button onclick="document.getElementById('extra-modal-container').innerHTML=''" class="w-full py-2.5 rounded-xl btn-glow-indigo text-white font-bold text-xs mt-2">
+                Understood
+              </button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      },
+
+
+
       // 17. ADMIN-ONLY USER LOGS MODAL
       // ========================================================
       async openUserLogsModal() {
