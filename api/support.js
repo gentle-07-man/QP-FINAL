@@ -1,4 +1,3 @@
-
 // /api/support.js - Vercel Serverless Function for Help & Support Ticket Raise
 
 export default async function handler(req, res) {
@@ -41,7 +40,7 @@ export default async function handler(req, res) {
     }
 
     const ticketId = 'TKT-' + Date.now().toString().slice(-6);
-    const token = process.env.BOT_TOKEN_SUPPORT || process.env.SUPPORT_BOT_TOKEN;
+    const token = process.env.SUPPORT_BOT_TOKEN || process.env.BOT_TOKEN_SUPPORT;
 
     const formattedMessage = 
       `🎫 *NEW SUPPORT TICKET: ${ticketId}*\n\n` +
@@ -55,7 +54,7 @@ export default async function handler(req, res) {
       `⏰ *Time:* ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST`;
 
     if (!token) {
-      console.warn('[support-api] BOT_TOKEN_SUPPORT is not set in Vercel environment variables.');
+      console.warn('[support-api] SUPPORT_BOT_TOKEN is not set in Vercel environment variables.');
       return res.status(200).json({
         success: true,
         simulated: true,
@@ -65,8 +64,8 @@ export default async function handler(req, res) {
     }
 
     // Determine target chat ID
-    let chatId = process.env.BOT_TOKEN_SUPPORT_CHAT_ID ||
-                 process.env.SUPPORT_CHAT_ID ||
+    let chatId = process.env.SUPPORT_CHAT_ID ||
+                 process.env.BOT_TOKEN_SUPPORT_CHAT_ID ||
                  process.env.TELEGRAM_CHAT_ID ||
                  '';
 
