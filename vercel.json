@@ -6,8 +6,12 @@
       "destination": "/api/telegram.js"
     },
     {
-      "source": "/api/support",
-      "destination": "/api/support.js"
+      "source": "/.netlify/functions/sendToTelegram",
+      "destination": "/api/telegram.js"
+    },
+    {
+      "source": "/.netlify/functions/sendMock",
+      "destination": "/api/telegram.js"
     },
     {
       "source": "/(.*)",
@@ -15,4 +19,3 @@
     }
   ]
 }
-
