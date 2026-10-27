@@ -12,22 +12,28 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Build APK
+      - name: Build QP
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/android
           mkdir -p www
           cp index.html www/
           cp -r . www/ 2>/dev/null || true
-          ls www/
-          echo '{"appId":"com.gentle.qpfinal","appName":"QP-FINAL","webDir":"www"}' > capacitor.config.json
-          cat capacitor.config.json
+          echo '{"appId":"com.gentle.qphub","appName":"QP","webDir":"www"}' > capacitor.config.json
           npx cap add android
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">QP<\/string>/' android/app/src/main/res/values/strings.xml
+          if [ -f "logo.png" ]; then
+            for d in mipmap-mdpi mipmap-hdpi mipmap-xhdpi mipmap-xxhdpi mipmap-xxxhdpi; do
+              cp logo.png android/app/src/main/res/$d/ic_launcher.png
+              cp logo.png android/app/src/main/res/$d/ic_launcher_round.png
+              cp logo.png android/app/src/main/res/$d/ic_launcher_foreground.png || true
+            done
+          fi
           npx cap copy android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: QP-FINAL-APK
+          name: QP-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
