@@ -1286,53 +1286,37 @@
         this.initQuestionBanksListener();
       },
 
-      initChatsListener() {
-  if (!db) return;
-  try {
-    const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'guest';
-    
-    db.collection("chats").doc("general_adda").set({
-      id: "general_adda",
-      name: "Community Adda",
-      participants: firebase.firestore.FieldValue.arrayUnion(uid),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(() => {});
-
-    const handleMsgSnapshot = (snapshot) => {
-      if (!snapshot) return;
-      const msgs = [];
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        if (!d.message && !d.text) return;
-        msgs.push({
-          id: d.id || doc.id,
-          gcName: d.gcName || d.senderName || 'Student',
-          message: d.message || d.text || '',
-          timestamp: d.timestamp || d.createdAt || null,
-          senderRole: d.senderRole || d.role || 'Student',
-          senderLower: (d.gcName || d.senderName || '').toLowerCase(),
-          uid: d.uid || '',
-          createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
-        });
-      });
-      msgs.sort((a,b) => (a.createdAt - b.createdAt));
-      this.chats = msgs;
-      try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e) {}
-      if (typeof ChatDB !== 'undefined' && ChatDB.saveChats) ChatDB.saveChats(this.chats);
-      this.notify('chats', true);
-    };
-
-    // Main listener - khali hok ba na hok sobsomoy chalbe
-    db.collection("chats").doc("general_adda").collection("messages")
-      .orderBy("timestamp", "asc")
-      .onSnapshot(handleMsgSnapshot, (err) => {
-        console.warn("chats listener err:", err.message);
-      });
-
-  } catch (e) {
-    console.warn("chats setup err:", e);
-  }
-},
+            initChatsListener() {
+        if (!db) return;
+        try {
+          const handleSnapshot = (snapshot) => {
+            if (!snapshot) return;
+            const msgs = [];
+            snapshot.forEach(doc => {
+              const d = doc.data();
+              msgs.push({
+                id: doc.id,
+                gcName: d.gcName || d.senderName || 'Student',
+                message: d.message || d.text || '',
+                timestamp: d.timestamp,
+                senderRole: d.senderRole || d.role || 'Student',
+                senderLower: (d.gcName || d.senderName || '').toLowerCase(),
+                createdAt: d.timestamp ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp)) : (d.createdAt ? new Date(d.createdAt) : new Date())
+              });
+            });
+            // khali holeo update korte hobe, nahole delete er por list atke thake
+            this.chats = msgs;
+            try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e){}
+            ChatDB.saveChats(this.chats);
+            this.notify('chats', true);
+          };
+          db.collection('chats').orderBy('timestamp','asc').onSnapshot(handleSnapshot, (err)=>{
+            console.warn("chats err:", err.message);
+          });
+        } catch(e){
+          console.warn("chats setup:", e);
+        }
+      },
       initUsersListener() {
         if (!db) return;
         try {
@@ -1753,54 +1737,44 @@
       },
 
       // CHATS - Cross-Device phone A to phone B Firestore synchronization
-      async addChat(item) {
-        const localId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-        const gcName = item.gcName || (App.currentUser ? App.currentUser.name : 'Student');
-        const role = item.senderRole || (App.currentUser ? App.currentUser.role : 'Student');
-        const text = item.message || item.text || '';
-        const uid = currentUid || (App.currentUser && (App.currentUser.uid || App.currentUser.nameLower)) || 'student';
+        async addChat(item) {
+    const localId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const gcName = item.gcName || (App.currentUser ? App.currentUser.name : 'Student');
+    const role = item.senderRole || (App.currentUser ? App.currentUser.role : 'Student');
+    const text = item.message || item.text || '';
 
-        const payload = {
-          id: localId,
-          uid: uid,
-          gcName: gcName,
-          senderName: gcName,
+    const payload = {
+      id: localId,
+      gcName: gcName,
+      message: text,
+      senderRole: role,
+      senderLower: gcName.toLowerCase(),
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAt: new Date().toISOString()
+    };
+    const localMsg = { ...payload, createdAt: new Date() };
+
+    if (!this.chats.some(c => c.id === localMsg.id)) {
+      this.chats.push(localMsg);
+      this.notify('chats', true);
+    }
+    try { localStorage.setItem('qp_chats', JSON.stringify(this.chats)); } catch(e){}
+    ChatDB.saveChats(this.chats);
+
+    if (db) {
+      try {
+        await db.collection('chats').doc(localId).set({
+          gcName,
           message: text,
-          text: text,
           senderRole: role,
           senderLower: gcName.toLowerCase(),
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          createdAt: new Date().toISOString()
-        };
-
-        const localMsg = {
-          ...payload,
-          createdAt: new Date()
-        };
-
-        if (!this.chats.some(c => c.id === localMsg.id)) {
-          this.chats.push(localMsg);
-          this.notify('chats', true);
-        }
-
-        try {
-          localStorage.setItem('qp_chats', JSON.stringify(this.chats));
-        } catch (e) {}
-        ChatDB.saveChats(this.chats);
-
-        if (db) {
-          try {
-            await db.collection("chats").doc("general_adda").collection("messages").add(payload);
-            await db.collection("chats").doc(localId).set(payload);
-          } catch (e) {
-            console.warn("Firestore chats add notice:", e.message);
-          }
-        }
-
-        if (this.channel) this.channel.postMessage({ type: 'CHAT_ADD', payload: localMsg });
-        return localMsg;
-      },
-
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e){ console.warn("add chat err", e.message); }
+    }
+    if (this.channel) this.channel.postMessage({ type: 'CHAT_ADD', payload: localMsg });
+    return localMsg;
+  },
       async deleteChat(msgId) {
         this.chats = this.chats.filter(c => c.id !== msgId);
         try {
