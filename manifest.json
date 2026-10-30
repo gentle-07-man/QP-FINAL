@@ -1,7 +1,7 @@
 {
-  "name": "QP 2.0 HUB",
-  "short_name": "QP 2.0",
-  "description": "QP 2.0 HUB Educational Platform",
+  "name": "QP - Educational Platform",
+  "short_name": "QP",
+  "description": "QP Educational Platform",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
